@@ -15,4 +15,4 @@ Angus
 Alikhan
 Justin
 
-Java / Python / SQL
+Java 8 / Python / SQL
