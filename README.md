@@ -16,7 +16,10 @@ Alikhan
 Justin
 
 ### Language
-Java 8 / Python / SQL
+Java 8 / Python
+
+### Database
+MongoDB
 
 ## Links
 Slack: https://app.slack.com/client/T07HDV199HT/C07HTA6TVDG
