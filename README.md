@@ -16,7 +16,7 @@ Alikhan
 Justin
 
 ### Language
-Java 8 / Python
+Python
 
 ### Database
 MongoDB
