@@ -21,6 +21,8 @@ Python
 ### Database
 MongoDB
 
+Data drawings: https://excalidraw.com/#room=7553b4b8439d70db0e87,aQhLnR3lskkplC9XkIQZHA
+
 ## Links
 Slack: https://app.slack.com/client/T07HDV199HT/C07HTA6TVDG
 
