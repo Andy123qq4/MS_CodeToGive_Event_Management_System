@@ -107,9 +107,39 @@ def unregister_from_event(event_id):
     else:
         return jsonify({"error": "Failed to unregister the attendee"}), 500
 
-# # Create a new event
-# @app.route("/events/create", methods=["POST"])
-# def create_event():
+# Create a new event
+@app.route("/events/create", methods=["POST"])
+def create_event():
+    # get the data from the request
+    data = request.get_json()
+    create_state = data.get("createState")
+    is_published = data.get("isPublished")
+    is_deleted = data.get("isDeleted")
+    created_by = data.get("created_by")
+    last_modified_by = data.get("last_modified_by")
+    event_details = data.get("event_details")
+    training = data.get("training")
+    reminder = data.get("reminder")
+    participants = data.get("participants")
+
+    # check if the event already exists
+    event = events.find_one({"event_name": event_details.get("event_name")})
+    if event:
+        return jsonify({"error": "Event already exists"}), 400
+
+    # create a new event
+    
+    event = {
+        "event_id": ObjectId(event_id),
+        "name": attendee_name,
+        "email": attendee_email,
+        "created_at": datetime.now(),
+    }
+    result = registrations.insert_one(registration)
+    new_registration = registrations.find_one({"_id": result.inserted_id})
+    new_registration["_id"] = str(new_registration["_id"])
+    return jsonify(new_registration), 201
+
 
 
 
@@ -123,6 +153,11 @@ def unregister_from_event(event_id):
 # def delete_event(event_id):
 
 
+# Retrieve all events
+
+# helper functions
+
+# ==================Event operations=======================
 
 if __name__ == "__main__":
     app.run(host="localhost", port=8080, debug=True)

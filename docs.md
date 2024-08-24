@@ -167,7 +167,7 @@ Content:
 
 Error Response:
 Code: 400 Bad Request
-Content: {"error": "Missing required fields"}
+Content: {"error": "Missing required fields"} or {"error":"Event already exists"}
 
 
 # Update an Event
