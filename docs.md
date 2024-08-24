@@ -126,7 +126,12 @@ Content:
   "message": "User registered successfully"
 }
 
+Missing required data:
+Code: 400 BAD REQUEST
+Content: {"error": "Missing required fields: {}"}
+
 Error Responses:
+Code: 400 BAD REQUEST
 Content: {"error":"User register unsuccessful"}
 
 # Create a New Event/ Appointment
