@@ -20,7 +20,12 @@ client = MongoClient(
     "mongodb+srv://mscodetogive:team12isthewinner@cluster0.xnb7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 )
 db = client["MSCodeToGive"]
+
 events = db["event"]
+users = db["users"]
+accounts = db["accounts"]
+badges = db["badges"]
+trainings = db["trainings"]
 registrations = db["registrations"]
 
 
@@ -42,6 +47,7 @@ def create_event():
         "participants": data.get("participants"),
         "reminder": data.get("reminder"),
         "training": data.get("training"),
+        "created_time": datetime.now(),
     }
     print(event)
 
@@ -142,113 +148,220 @@ def delete_event(event_id):
 
 
 # Registration operations
-@app.route("/events/<event_id>/register", methods=["POST"])
-def register_for_event(event_id):
+# @app.route("/events/<event_id>/register", methods=["POST"])
+@app.route("/events/register", methods=["POST"])
+def register_for_event():
     data = request.get_json()
-    attendee_name = data.get("name")
-    attendee_email = data.get("email")
+
+    try:
+        event_id = data.get("event_id")
+        participant_data = {
+            "user_id": data.get("user_id"),
+            "registered_at": datetime.now(),
+        }
+    except Exception as e:
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+        return response
 
     # Check if the event exists
     event = events.find_one({"_id": ObjectId(event_id)})
     if not event:
-        return jsonify({"error": "Event not found"}), 404
+        response = make_response(
+            jsonify({"code": 404, "description": "Event not found"}),
+            404,
+        )
+        return response
 
     # Check if the attendee is already registered
-    existing_registration = registrations.find_one(
-        {"event_id": ObjectId(event_id), "name": attendee_name, "email": attendee_email}
+    if "participants" in event:
+        for participant in event["participants"]:
+            if participant["user_id"] == participant_data["user_id"]:
+                response = make_response(
+                    jsonify(
+                        {
+                            "code": 200,
+                            "description": "Attendee is already registered for this event",
+                        }
+                    ),
+                    200,
+                )
+                return response
+        # Check if the event is full
+        if "participants" in event:
+            # Todo, add max_participants to event_details
+            # if no max_participants is set, assume no limit
+            max_participants = event.get("event_details", {}).get(
+                "max_participants", None
+            )
+            if max_participants is not None:
+                if len(event["participants"]) >= max_participants:
+                    response = make_response(
+                        jsonify({"code": 400, "description": "Event is full"}),
+                        400,
+                    )
+                    return response
+
+    # Add the new participant to the event's participants list
+    events.update_one(
+        {"_id": ObjectId(event_id)}, {"$push": {"participants": participant_data}}
     )
-    if existing_registration:
-        return jsonify({"error": "Attendee is already registered for this event"}), 400
 
-    # Create a new registration
-    registration = {
-        "event_id": ObjectId(event_id),
-        "name": attendee_name,
-        "email": attendee_email,
-        "created_at": datetime.now(),
-    }
-    result = registrations.insert_one(registration)
-    new_registration = registrations.find_one({"_id": result.inserted_id})
-    new_registration["_id"] = str(new_registration["_id"])
-    return jsonify(new_registration), 201
+    # Retrieve the updated event document
+    updated_event = events.find_one({"_id": ObjectId(event_id)})
+    updated_event["_id"] = str(updated_event["_id"])
+
+    response = make_response(
+        jsonify({"code": 201, "description": "Created", "data": updated_event}), 201
+    )
+    return response
 
 
-@app.route("/events/<event_id>/unregister", methods=["POST"])
-def unregister_from_event(event_id):
+@app.route("/events/unregister", methods=["POST"])
+def unregister_from_event():
     data = request.get_json()
-    attendee_name = data.get("name")
-    attendee_email = data.get("email")
+
+    try:
+        event_id = data.get("event_id")
+        user_id = data.get("user_id")
+    except Exception as e:
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+        return response
 
     # Check if the event exists
     event = events.find_one({"_id": ObjectId(event_id)})
     if not event:
-        return jsonify({"error": "Event not found"}), 404
+        response = make_response(
+            jsonify({"code": 404, "description": "Event not found"}),
+            404,
+        )
+        return response
 
     # Check if the attendee is registered
-    registration = registrations.find_one(
-        {"event_id": ObjectId(event_id), "name": attendee_name, "email": attendee_email}
-    )
-    if not registration:
-        return jsonify({"error": "Attendee is not registered for this event"}), 404
-
-    # Remove the registration
-    result = registrations.delete_one({"_id": registration["_id"]})
-    if result.deleted_count == 1:
-        return jsonify({"message": "Attendee unregistered successfully"}), 200
+    if "participants" in event:
+        participant = next(
+            (p for p in event["participants"] if p["user_id"] == user_id), None
+        )
+        if not participant:
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 404,
+                        "description": "Attendee is not registered for this event",
+                    }
+                ),
+                404,
+            )
+            return response
     else:
-        return jsonify({"error": "Failed to unregister the attendee"}), 500
+        response = make_response(
+            jsonify(
+                {
+                    "code": 404,
+                    "description": "Attendee is not registered for this event",
+                }
+            ),
+            404,
+        )
+        return response
 
-# # Create a new event
-# @app.route("/events/create", methods=["POST"])
-# def create_event():
-#     # get the data from the request
-#     data = request.get_json()
-#     create_state = data.get("createState")
-#     is_published = data.get("isPublished")
-#     is_deleted = data.get("isDeleted")
-#     created_by = data.get("created_by")
-#     last_modified_by = data.get("last_modified_by")
-#     event_details = data.get("event_details")
-#     training = data.get("training")
-#     reminder = data.get("reminder")
-#     participants = data.get("participants")
+    # Remove the participant from the event's participants list
+    events.update_one(
+        {"_id": ObjectId(event_id)}, {"$pull": {"participants": {"user_id": user_id}}}
+    )
 
-#     # check if the event already exists
-#     event = events.find_one({"event_name": event_details.get("event_name")})
-#     if event:
-#         return jsonify({"error": "Event already exists"}), 400
+    # Retrieve the updated event document
+    updated_event = events.find_one({"_id": ObjectId(event_id)})
+    updated_event["_id"] = str(updated_event["_id"])
 
-#     # create a new event
-    
-#     event = {
-#         "event_id": ObjectId(event_id),
-#         "name": attendee_name,
-#         "email": attendee_email,
-#         "created_at": datetime.now(),
-#     }
-#     result = registrations.insert_one(registration)
-#     new_registration = registrations.find_one({"_id": result.inserted_id})
-#     new_registration["_id"] = str(new_registration["_id"])
-#     return jsonify(new_registration), 201
+    response = make_response(
+        jsonify(
+            {
+                "code": 200,
+                "description": "Attendee unregistered successfully",
+                "data": updated_event,
+            }
+        ),
+        200,
+    )
+    return response
 
 
+# ==================User operations=======================
 
 
+@app.route("/user/sign-up", methods=["POST"])
+def create_user():
+    data = request.get_json()
 
-# # Delete an event
-# @app.route("/events/update/<event_id>", methods=["POST"])
-# def update_event(event_id):
+    # frontend should check
+    # Validate input data
+    # if not data or not data.get("email") or not data.get("password"):
+    #     return make_response(jsonify({"error": "Missing required fields"}), 400)
 
-# # Update an event
-# @app.route("/events/delete/<event_id>", methods=["POST"])
-# def delete_event(event_id):
+    # Check if user already exists
+    if accounts_collection.find_one({"email": data["email"]}):
+        return make_response(jsonify({"error": "User already exists"}), 400)
+
+    # Hash the password
+    hashed_password = generate_password_hash(data["password"], method="sha256")
+
+    # Create new user document
+    new_user = {
+        "first_name": data.get("first_name", ""),
+        "last_name": data.get("last_name", ""),
+        "country_code": data.get("country_code", ""),
+        "contact_number": data.get("contact_number", ""),
+        "ethnicity": data.get("ethnicity", ""),
+        "gender": data.get("gender", ""),
+    }
+
+    # Insert the new user into the users collection
+    user_result = users_collection.insert_one(new_user)
+    user_id = str(user_result.inserted_id)
+
+    # Create new account document
+    new_account = {
+        "email": data["email"],
+        "password": hashed_password,
+        "user_id": user_id,
+    }
+
+    # Insert the new account into the accounts collection
+    account_result = accounts_collection.insert_one(new_account)
+    new_account["_id"] = str(account_result.inserted_id)
+
+    # Return success response
+    return make_response(
+        jsonify(
+            {
+                "message": "User registered successfully",
+                "user_data": new_user,
+                "account_data": new_account,
+            }
+        ),
+        201,
+    )
 
 
-# Retrieve all events
-
-# helper functions
-
-# ==================Event operations=======================
+# ==================Main=======================
 
 if __name__ == "__main__":
     app.run(host="localhost", port=8080, debug=True)
