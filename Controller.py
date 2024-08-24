@@ -59,11 +59,11 @@ def create_event():
     if duplicate_event:
         duplicate_event["_id"] = str(duplicate_event["_id"])
         response_data = {
-            "code": 409,
+            "code": 400,
             "description": "Event already exists",
             "data": duplicate_event,
         }
-        return make_response(jsonify(response_data), 409)
+        return make_response(jsonify(response_data), 400)
 
     try:
         result = events.insert_one(event)
@@ -72,11 +72,11 @@ def create_event():
         return make_response(jsonify(new_event), 201)
     except Exception as e:
         log.error(f"Error creating event: {e}")
-        return make_response(jsonify({"error": str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 400)
 
 
 # Get all events
-@app.route("/events", methods=["GET"])
+@app.route("/events/get-all", methods=["GET"])
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -84,11 +84,11 @@ def get_all_events():
             event["_id"] = str(event["_id"])
         return jsonify(all_events), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 400
 
 
 # Get a specific event
-@app.route("/events/<event_id>", methods=["GET"])
+@app.route("/events/get-specific/<event_id>", methods=["GET"])
 def get_event(event_id):
     try:
         event = events.find_one({"_id": ObjectId(event_id)})
@@ -102,7 +102,7 @@ def get_event(event_id):
 
 
 # Update an event
-@app.route("/events/<event_id>", methods=["PUT"])
+@app.route("/events/update/<event_id>", methods=["PUT"])
 def update_event(event_id):
     data = request.get_json()
     updated_event = {
@@ -126,7 +126,7 @@ def update_event(event_id):
 
 
 # Delete an event
-@app.route("/events/<event_id>", methods=["DELETE"])
+@app.route("/events/delete/<event_id>", methods=["DELETE"])
 def delete_event(event_id):
     try:
         result = events.delete_one({"_id": ObjectId(event_id)})
@@ -198,38 +198,38 @@ def unregister_from_event(event_id):
     else:
         return jsonify({"error": "Failed to unregister the attendee"}), 500
 
-# Create a new event
-@app.route("/events/create", methods=["POST"])
-def create_event():
-    # get the data from the request
-    data = request.get_json()
-    create_state = data.get("createState")
-    is_published = data.get("isPublished")
-    is_deleted = data.get("isDeleted")
-    created_by = data.get("created_by")
-    last_modified_by = data.get("last_modified_by")
-    event_details = data.get("event_details")
-    training = data.get("training")
-    reminder = data.get("reminder")
-    participants = data.get("participants")
+# # Create a new event
+# @app.route("/events/create", methods=["POST"])
+# def create_event():
+#     # get the data from the request
+#     data = request.get_json()
+#     create_state = data.get("createState")
+#     is_published = data.get("isPublished")
+#     is_deleted = data.get("isDeleted")
+#     created_by = data.get("created_by")
+#     last_modified_by = data.get("last_modified_by")
+#     event_details = data.get("event_details")
+#     training = data.get("training")
+#     reminder = data.get("reminder")
+#     participants = data.get("participants")
 
-    # check if the event already exists
-    event = events.find_one({"event_name": event_details.get("event_name")})
-    if event:
-        return jsonify({"error": "Event already exists"}), 400
+#     # check if the event already exists
+#     event = events.find_one({"event_name": event_details.get("event_name")})
+#     if event:
+#         return jsonify({"error": "Event already exists"}), 400
 
-    # create a new event
+#     # create a new event
     
-    event = {
-        "event_id": ObjectId(event_id),
-        "name": attendee_name,
-        "email": attendee_email,
-        "created_at": datetime.now(),
-    }
-    result = registrations.insert_one(registration)
-    new_registration = registrations.find_one({"_id": result.inserted_id})
-    new_registration["_id"] = str(new_registration["_id"])
-    return jsonify(new_registration), 201
+#     event = {
+#         "event_id": ObjectId(event_id),
+#         "name": attendee_name,
+#         "email": attendee_email,
+#         "created_at": datetime.now(),
+#     }
+#     result = registrations.insert_one(registration)
+#     new_registration = registrations.find_one({"_id": result.inserted_id})
+#     new_registration["_id"] = str(new_registration["_id"])
+#     return jsonify(new_registration), 201
 
 
 
