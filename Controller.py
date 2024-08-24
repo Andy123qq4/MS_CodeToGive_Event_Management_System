@@ -1,9 +1,12 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+import logging
 
 app = Flask(__name__)
+log = logging.getLogger(__name__)
+
 
 """
 
@@ -24,27 +27,115 @@ registrations = db["registrations"]
 # ==================Event operations=======================
 
 
-# Event CRUD operations
+# Create a new event
 @app.route("/events/create", methods=["POST"])
 def create_event():
     data = request.get_json()
-    event_name = data.get("name")
-    event_date = data.get("date")
-    event_location = data.get("location")
-    event_description = data.get("description")
 
     # Create a new event
     event = {
-        # "event_id": auto increment,
-        "name": event_name,
-        "date": event_date,
-        "location": event_location,
-        "description": event_description,
+        # "id": data.get("id"),
+        "created_by": data.get("created_by"),
+        "event_details": data.get("event_details"),
+        "isDeleted": data.get("isDeleted"),
+        "isPublished": data.get("isPublished"),
+        "participants": data.get("participants"),
+        "reminder": data.get("reminder"),
+        "training": data.get("training"),
     }
-    result = events.insert_one(event)
-    new_event = events.find_one({"_id": result.inserted_id})
-    new_event["_id"] = str(new_event["_id"])
-    return jsonify(new_event), 201
+    print(event)
+
+    duplicate_event = events.find_one(
+        {
+            "created_by": event["created_by"],
+            "event_details.event_name": event["event_details"]["event_name"],
+            "event_details.start_date": event["event_details"]["start_date"],
+            "event_details.start_time": event["event_details"]["start_time"],
+            "event_details.end_date": event["event_details"]["end_date"],
+            "event_details.end_time": event["event_details"]["end_time"],
+        }
+    )
+    print(duplicate_event)
+    if duplicate_event:
+        duplicate_event["_id"] = str(duplicate_event["_id"])
+        response_data = {
+            "code": 409,
+            "description": "Event already exists",
+            "data": duplicate_event,
+        }
+        return make_response(jsonify(response_data), 409)
+
+    try:
+        result = events.insert_one(event)
+        new_event = events.find_one({"_id": result.inserted_id})
+        new_event["_id"] = str(new_event["_ id"])
+        return make_response(jsonify(new_event), 201)
+    except Exception as e:
+        log.error(f"Error creating event: {e}")
+        return make_response(jsonify({"error": str(e)}), 500)
+
+
+# Get all events
+@app.route("/events", methods=["GET"])
+def get_all_events():
+    try:
+        all_events = list(events.find())
+        for event in all_events:
+            event["_id"] = str(event["_id"])
+        return jsonify(all_events), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Get a specific event
+@app.route("/events/<event_id>", methods=["GET"])
+def get_event(event_id):
+    try:
+        event = events.find_one({"_id": ObjectId(event_id)})
+        if event:
+            event["_id"] = str(event["_id"])
+            return jsonify(event), 200
+        else:
+            return jsonify({"error": "Event not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Update an event
+@app.route("/events/<event_id>", methods=["PUT"])
+def update_event(event_id):
+    data = request.get_json()
+    updated_event = {
+        "created_by": data.get("created_by"),
+        "event_details": data.get("event_details"),
+        "isDeleted": data.get("isDeleted"),
+        "isPublished": data.get("isPublished"),
+        "participants": data.get("participants"),
+        "reminder": data.get("reminder"),
+        "training": data.get("training"),
+    }
+    try:
+        result = events.update_one({"_id": ObjectId(event_id)}, {"$set": updated_event})
+        if result.modified_count == 1:
+            updated_event["_id"] = event_id
+            return jsonify(updated_event), 200
+        else:
+            return jsonify({"error": "Failed to update the event"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Delete an event
+@app.route("/events/<event_id>", methods=["DELETE"])
+def delete_event(event_id):
+    try:
+        result = events.delete_one({"_id": ObjectId(event_id)})
+        if result.deleted_count == 1:
+            return jsonify({"message": "Event deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Failed to delete the event"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ==================Registration operations=======================
@@ -106,6 +197,22 @@ def unregister_from_event(event_id):
         return jsonify({"message": "Attendee unregistered successfully"}), 200
     else:
         return jsonify({"error": "Failed to unregister the attendee"}), 500
+
+# # Create a new event
+# @app.route("/events/create", methods=["POST"])
+# def create_event():
+
+
+
+
+# # Delete an event
+# @app.route("/events/update/<event_id>", methods=["POST"])
+# def update_event(event_id):
+
+# # Update an event
+# @app.route("/events/delete/<event_id>", methods=["POST"])
+# def delete_event(event_id):
+
 
 
 if __name__ == "__main__":
