@@ -198,6 +198,22 @@ def unregister_from_event(event_id):
     else:
         return jsonify({"error": "Failed to unregister the attendee"}), 500
 
+# # Create a new event
+# @app.route("/events/create", methods=["POST"])
+# def create_event():
+
+
+
+
+# # Delete an event
+# @app.route("/events/update/<event_id>", methods=["POST"])
+# def update_event(event_id):
+
+# # Update an event
+# @app.route("/events/delete/<event_id>", methods=["POST"])
+# def delete_event(event_id):
+
+
 
 if __name__ == "__main__":
     app.run(host="localhost", port=8080, debug=True)
