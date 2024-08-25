@@ -36,7 +36,7 @@ registrations = db["registrations"]
 
 
 # Create a new event
-@app.route("/api/events/create", methods=["POST"])
+@app.route("/api/events/create/", methods=["POST"])
 def create_event():
     data = request.get_json()
 
@@ -118,7 +118,7 @@ def create_event():
 
 
 # Get all events
-@app.route("/api/events/get-all", methods=["GET"])
+@app.route("/api/events/get-all/", methods=["GET"])
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -130,7 +130,7 @@ def get_all_events():
 
 
 # Get a specific event
-@app.route("/api/events/get-specific", methods=["POST"])
+@app.route("/api/events/get-specific/", methods=["POST"])
 def get_event():
     data = request.get_json()
     try:
@@ -146,6 +146,7 @@ def get_event():
 
 
 # Update an event
+# Todo, change to POST
 @app.route("/api/events/update/<event_id>", methods=["POST"])
 def update_event(event_id):
     data = request.get_json()
@@ -183,6 +184,7 @@ def update_event(event_id):
 
 
 # Delete an event
+# Todo, change to POST
 @app.route("/api/events/delete/<event_id>", methods=["DELETE"])
 def delete_event(event_id):
     try:
@@ -199,7 +201,7 @@ def delete_event(event_id):
 
 
 # Registration operations
-@app.route("/api/events/register", methods=["POST"])
+@app.route("/api/events/register/", methods=["POST"])
 def register_for_event():
     data = request.get_json()
 
@@ -286,7 +288,7 @@ def register_for_event():
     return response
 
 
-@app.route("/api/events/unregister", methods=["POST"])
+@app.route("/api/events/unregister/", methods=["POST"])
 def unregister_from_event():
     data = request.get_json()
 
@@ -358,7 +360,7 @@ def unregister_from_event():
 # ==================User operations=======================
 
 
-@app.route("/api/users/sign-in", methods=["POST"])
+@app.route("/api/users/sign-in/", methods=["POST"])
 def sign_in():
     data = request.get_json()
 
@@ -389,7 +391,7 @@ def sign_in():
         return jsonify({"error": "Invalid JSON data", "message": str(e)}), 400
 
 
-@app.route("/api/users/sign-up", methods=["POST"])
+@app.route("/api/users/sign-up/", methods=["POST"])
 def sign_up():
     data = request.get_json()
 
@@ -514,17 +516,32 @@ def get_users_events():
         return response
 
     try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            response = make_response(
+                jsonify({"code": 404, "description": "User not found", "data": {}}),
+                404,
+            )
+            return response
+
+        role = user.get("usertype") + "s"
+        print(role)
         all_events = list(events.find())
         event_list = []
+
         for event in all_events:
             event["_id"] = str(event["_id"])
-            participants = (
-                event["participants"]["clients"]
-                + event["participants"]["volunteers"]
-                + event["participants"]["admins"]
-            )
-            if user_id in participants:
+
+            # Check if role exists in participants
+            if role in event["participants"]:
+                participants = event["participants"][role]
+            else:
+                print(f"Role {role} not found in participants")
+                participants = []
+
+            if any(participant["user_id"] == user_id for participant in participants):
                 event_list.append(event["_id"])
+
         response = make_response(
             jsonify(
                 {
