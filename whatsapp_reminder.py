@@ -10,8 +10,12 @@ client = MongoClient(
 db = client["MSCodeToGive"]
 
 # Twilio setup (retrieve credentials from environment variables)
-account_sid = os.getenv('TWILIO_ACCOUNT_SID')
-auth_token = os.getenv('TWILIO_AUTH_TOKEN')
+
+# Please replace the account_sid and the auth_token with your own Twilio credentials
+account_sid = 'AC563a1ebd79285971e2cc35686654f09b'
+auth_token = '6b1c03162dec073f144245f259194186'
+
+
 TWILIO_WHATSAPP_NUMBER = 'whatsapp:+14155238886' # Use Twilio Sandbox number for testing
 
 # Create Twilio client
@@ -47,8 +51,8 @@ def main():
 
     # Hardcoded list of user phone numbers
     users = [
-        'whatsapp:+85290473671',  # Replace with actual WhatsApp numbers
-        'whatsapp:+77768343713'
+        'whatsapp:+85290473671', # Replace with actual WhatsApp numbers
+        'whatsapp:+85294844936'
         # 'whatsapp:+85253192036'
         # 'whatsapp:+85234567890',
         # 'whatsapp:+85245678901'
