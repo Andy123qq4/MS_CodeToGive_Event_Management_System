@@ -5,6 +5,7 @@ from flask_cors import CORS, cross_origin
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from whatsapp_reminder import send_whatsapp_message
 import logging
 
 # import openai  # pip install openai==0.28 (old version)
@@ -711,10 +712,51 @@ def get_all_users():
         return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+# ===============Send Reminders=====================
+@app.route("/api/events/send-reminder/", methods=["POST"])
+@cross_origin()
+def handle_send_message():
+    data = request.get_json()
+    try:
+        event_id = data.get("event_id")
+        event = events.find_one({"_id": ObjectId(event_id)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    event_name = event["event_details"]["event_name"]
+    start_date = event["event_details"]["start_date"]
+    event_location = event["event_details"]["location"]
+    start_time = event["event_details"]["start_time"]
+    end_time = event["event_details"]["end_time"]
+    end_date = event["event_details"]["end_date"]
+    message = "Please bring along your Mizookies and your pookies"
+
+
+    
+    sample_message = (
+        f"🔔 Thank you for signing up for {event_name} with Zubin Foundation! It is happening on {start_date} at {start_time}.\n"
+        f" The event will be held at {event_location}. {message}"
+    )
+    # Hardcoded list of user phone numbers
+    users = [
+        'whatsapp:+85290473671', # Replace with actual WhatsApp numbers
+        'whatsapp:+85294844936'
+        # 'whatsapp:+85253192036'
+        # 'whatsapp:+85234567890',
+        # 'whatsapp:+85245678901'
+    ]
+
+    try:
+        for phone_number in users:
+            send_whatsapp_message(phone_number, sample_message)
+        return jsonify({"status": "success", "message": "Message sent successfully!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ==================Main=======================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="localhost", port=8080, debug=True)
