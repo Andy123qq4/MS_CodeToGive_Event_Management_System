@@ -9,19 +9,19 @@ import logging
 
 # import openai  # pip install openai==0.28 (old version)
 
+log = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config["CORS_HEADERS"] = "Content-Type"
-log = logging.getLogger(__name__)
 # connect to local frontend
-# CORS(
-#     app,
-#     resources={
-#         r"/*": {
-#             "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app"]
-#         }
-#     },
-# )
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app"]
+        }
+    },
+)
+# CORS(app)
 
 """
 This file contains all API endpoints for the application.
