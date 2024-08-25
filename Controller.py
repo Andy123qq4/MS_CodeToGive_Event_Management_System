@@ -16,7 +16,7 @@ CORS(
     app,
     resources={
         r"/*": {
-            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app/"]
+            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app"]
         }
     },
 )
