@@ -627,6 +627,8 @@ def get_users_calendar():
                         "event_name": event["event_details"]["event_name"],
                         "start_date": event["event_details"]["start_date"],
                         "start_time": event["event_details"]["start_time"],
+                        "end_date": event["event_details"]["end_date"],
+                        "end_time": event["event_details"]["end_time"],
                         "location": event["event_details"]["location"],
                         "description": event["event_details"]["description"],
                     }
