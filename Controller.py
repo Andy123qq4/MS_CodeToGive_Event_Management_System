@@ -587,7 +587,7 @@ def get_users_events():
                 participants = []
 
             if any(participant["user_id"] == user_id for participant in participants):
-                event_list.append(event["_id"])
+                event_list.append(event)
 
         response = make_response(
             jsonify(
