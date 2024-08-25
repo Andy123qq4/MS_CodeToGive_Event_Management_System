@@ -5,6 +5,8 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 from icalendar import Calendar, Event
+from pymongo import MongoClient
+from bson import ObjectId  # To query MongoDB with ObjectID
 from datetime import datetime, timedelta
 
 # Connect to MongoDB
@@ -12,12 +14,13 @@ client = MongoClient(
     "mongodb+srv://mscodetogive:team12isthewinner@cluster0.xnb7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 )
 db = client["MSCodeToGive"]
+users = db["users"]
 
 # Email setup for Gmail
 SMTP_SERVER = 'smtp.gmail.com'  # SMTP server for Gmail
 SMTP_PORT = 587  # TLS port for Gmail
-EMAIL_USER = os.getenv('EMAIL_USER')  # Your Gmail address
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')  # Your Gmail App Password
+EMAIL_USER = 'alikhannurgazy@gmail.com'  # Your Gmail address
+EMAIL_PASSWORD = 'hasu heec xdxo mklf'  # Your Gmail App Password
 
 def create_ics_file(event_name, event_start, event_end, location, description):
     """
@@ -88,20 +91,24 @@ def main():
     # Create .ics file content
     ics_content = create_ics_file(event_name, event_start, event_end, location, description)
     
-    # Hardcoded list of user emails
-    to_emails = [
-        'nur.ali.talg@gmail.com',  # Replace with actual email addresses
-        # 'user2@example.com',       # Add more recipients as needed
-        # 'user3@example.com'
+    # List of ObjectIDs to query
+    object_ids = [
+        ObjectId("66cab5a4ad8ae30434b9ac95"),
+        ObjectId("66c9bd8643e62a1474adbbe6")
     ]
+
+    # Query MongoDB to fetch users with specified ObjectIDs
+    registered_users = users.find({"_id": {"$in": object_ids}})
 
     # Email details
     subject = "Reminder: Upcoming Counselling Session"
     body = f"Dear Participant,\n\nThis is a reminder for the upcoming event: {event_name}.\n\nLooking forward to your participation.\n\nBest Regards,\nYour Event Team"
 
-    # Send emails with .ics attachment
-    for to_email in to_emails:
-        send_email_with_ics(to_email, subject, body, ics_content)
+    # Send emails with .ics attachment to each user fetched from MongoDB
+    for user in registered_users:
+        email = user.get('email')
+        if email:
+            send_email_with_ics(email, subject, body, ics_content)
 
 if __name__ == "__main__":
     main()
