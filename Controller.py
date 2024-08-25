@@ -763,7 +763,7 @@ def handle_send_message():
     start_time = event["event_details"]["start_time"]
     end_time = event["event_details"]["end_time"]
     end_date = event["event_details"]["end_date"]
-    message = "Please bring along your Mizookies and your pookies"
+    message = "Please bring along your personal cutlery!"
 
     sample_message = (
         f"🔔 Thank you for signing up for {event_name} with Zubin Foundation! It is happening on {start_date} at {start_time}.\n"
