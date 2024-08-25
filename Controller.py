@@ -754,7 +754,8 @@ def handle_send_message():
     # Hardcoded list of user phone numbers
     users = [
         'whatsapp:+85290473671', # Replace with actual WhatsApp numbers
-        'whatsapp:+85294844936'
+        'whatsapp:+85294844936',
+        'whatsapp:+85297992105'
         # 'whatsapp:+85253192036'
         # 'whatsapp:+85234567890',
         # 'whatsapp:+85245678901'
