@@ -166,19 +166,26 @@ Success Response:
 Code: 201 Created
 Content:
 {
-  "event_id": "12345",
-  "message": "Event created successfully"
+  string of event
 }
 
 Error Response:
 Code: 400 Bad Request
-Content: {"error": "Missing required fields"}
+Content: {"error": "Missing required fields"} or {"error":"Event already exists"}
 
+
+# Get all Events
+URL: /events/get-all
+METHOD: GET
+
+# Get a specific event
+URL: /events/get-specific/<event_id>
+METHOD: GET
 
 # Update an Event
 URL: /events/update/<event_id>
 
-METHOD: POST
+METHOD: PUT
 
 Roles: Admin
 
@@ -213,7 +220,7 @@ Content:
 # Delete an Event
 URL: /events/delete/<event_id>
 
-METHOD: POST
+METHOD: DELETE
 
 Roles: Admin
 
