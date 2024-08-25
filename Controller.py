@@ -702,6 +702,20 @@ def handle_send_message():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/send-message', methods=['POST'])
+def send_message():
+    data = request.json
+    to_number = data.get('to_number')
+    message_body = data.get('message_body')
+    
+    if not to_number or not message_body:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    try:
+        send_whatsapp_message(to_number, message_body)
+        return jsonify({"status": "success", "message": "Message sent successfully!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ==================Main=======================
 
