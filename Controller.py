@@ -45,6 +45,7 @@ def create_event():
     event = {
         "createState": "Finished",
         "isPublished": data.get("isPublished", False),
+        "isAppointment": data.get("isAppointment"),
         "isDeleted": False,
         "created_by": data.get("created_by", "a1"),
         "event_details": {
