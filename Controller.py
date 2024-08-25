@@ -386,7 +386,7 @@ def sign_in():
         return jsonify({"error": "Sign in unsuccessful"}), 401
 
 
-@app.route("/api/users/register", methods=["POST"])
+@app.route("/api/users/sign-up", methods=["POST"])
 def sign_up():
     data = request.get_json()
 
