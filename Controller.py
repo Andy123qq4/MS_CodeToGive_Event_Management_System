@@ -12,7 +12,14 @@ import logging
 app = Flask(__name__)
 log = logging.getLogger(__name__)
 # connect to local frontend
-# CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app/"]
+        }
+    },
+)
 CORS(app)
 
 """
