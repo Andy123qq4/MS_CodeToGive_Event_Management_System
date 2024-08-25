@@ -86,7 +86,7 @@ def get_users_calendar(user_id):
 
 # Get events for user
 @app.route("/users/get-events-for-user/<user_id>", methods=["POST"])
-def get_events_for_user(user_id):
+def get_events_for_user():
     try:
         all_events = list(events.find())
         event_list = []
