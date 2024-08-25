@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, make_response
-from werkzeug.security import generate_password_hash, check_password_hash
+
+# from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from flask_cors import CORS, cross_origin
 from datetime import datetime
@@ -35,7 +36,7 @@ users = db["users"]
 # accounts = db["accounts"]
 badges = db["badges"]
 # trainings = db["trainings"]
-registrations = db["registrations"]
+# registrations = db["registrations"]
 
 
 @app.before_request
@@ -645,14 +646,43 @@ def get_users_events():
     return response
 
 
-@app.route("/api/users/calendar/", methods=["GET"])
-@cross_origin()
-def get_users_calendar():
-    # data = request.get_json()
-
+@app.route("/api/users/justforyou", methods=["GET"])
+def get_events_for_user():
     try:
         user_id = request.args.get("user_id")
-        # user_id = data.get("user_id")
+        all_events = list(events.find())
+        event_list = []
+        user_char_list = []
+        event_char_list = []
+
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["_id"] = str(user["_id"])
+        # else:
+        # return jsonify({"error": "User not found"}), 404
+        user_char_list.append(user["ethnicity"])
+        user_char_list.append(user["gender"])
+
+        for event in all_events:
+            event_char_list = []
+            event["_id"] = str(event["_id"])
+            event_char_list += event["event_details"]["target_audience"]
+            event_char_list += event["event_details"]["event_tags"]
+            # event_char_list v.s. user_char_list
+            for user_char in user_char_list:
+                if user_char in event_char_list:
+                    event_char_list.remove(user_char)
+            if len(event_char_list) == 0:
+                event_list.append(event)
+        return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/calendar/", methods=["GET"])
+def get_users_calendar():
+    try:
+        user_id = request.args.get("user_id")
         print(f"User ID: {user_id}")
     except Exception as e:
         return (
@@ -688,17 +718,7 @@ def get_users_calendar():
                 participants = []
 
             if any(participant["user_id"] == user_id for participant in participants):
-                event_list.append(
-                    {
-                        "event_name": event["event_details"]["event_name"],
-                        "start_date": event["event_details"]["start_date"],
-                        "start_time": event["event_details"]["start_time"],
-                        "end_date": event["event_details"]["end_date"],
-                        "end_time": event["event_details"]["end_time"],
-                        "location": event["event_details"]["location"],
-                        "description": event["event_details"]["description"],
-                    }
-                )
+                event_list.append(event)
 
         print(event_list)
         return (
@@ -717,7 +737,6 @@ def get_users_calendar():
 
 # Get all users
 @app.route("/api/users/get-all", methods=["GET"])
-@cross_origin()
 def get_all_users():
     try:
         all_users = list(users.find())
@@ -730,7 +749,6 @@ def get_all_users():
 
 # ===============Send Reminders=====================
 @app.route("/api/events/send-reminder/", methods=["POST"])
-@cross_origin()
 def handle_send_message():
     data = request.get_json()
     try:
