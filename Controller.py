@@ -230,9 +230,15 @@ def register_for_event():
         return response
 
     # Check if the attendee is already registered
-    if "participants" in event:
-        for participant in event["participants"]:
-            if participant["user_id"] == participant_data["user_id"]:
+    for role in ["clients", "volunteers", "admins"]:
+        participants = event["participants"].get(role, [])
+        logging.debug(f"Role: {role}, Participants: {participants}")
+        for participant in participants:
+            logging.debug(f"Participant: {participant}, Type: {type(participant)}")
+            if (
+                isinstance(participant, dict)
+                and participant.get("user_id") == participant_data["user_id"]
+            ):
                 response = make_response(
                     jsonify(
                         {
@@ -243,24 +249,31 @@ def register_for_event():
                     200,
                 )
                 return response
-        # Check if the event is full
-        if "participants" in event:
-            # Todo, add max_participants to event_details
-            # if no max_participants is set, assume no limit
-            max_participants = event.get("event_details", {}).get(
-                "max_participants", None
-            )
-            if max_participants is not None:
-                if len(event["participants"]) >= max_participants:
-                    response = make_response(
-                        jsonify({"code": 400, "description": "Event is full"}),
-                        400,
-                    )
-                    return response
 
-    # Add the new participant to the event's participants list
+    # Check if the event is full
+    if "participants" in event:
+        # Todo, add max_participants to event_details
+        # if no max_participants is set, assume no limit
+        max_participants = event.get("event_details", {}).get("max_participants", None)
+        if max_participants is not None:
+            total_participants = sum(
+                len(event["participants"].get(role, []))
+                for role in ["clients", "volunteers"]
+            )
+            if total_participants >= max_participants:
+                response = make_response(
+                    jsonify({"code": 400, "description": "Event is full"}),
+                    400,
+                )
+                return response
+
+    role = get_user(participant_data["user_id"])
+    print(role)
+
+    # Add the new participant to the correct role list in the event's participants
     events.update_one(
-        {"_id": ObjectId(event_id)}, {"$push": {"participants": participant_data}}
+        {"_id": ObjectId(event_id)},
+        {"$push": {f"participants.{role}": participant_data}},
     )
 
     # Retrieve the updated event document
@@ -268,7 +281,8 @@ def register_for_event():
     updated_event["_id"] = str(updated_event["_id"])
 
     response = make_response(
-        jsonify({"code": 201, "description": "Created", "data": updated_event}), 201
+        jsonify({"code": 201, "description": "Event created.", "data": updated_event}),
+        201,
     )
     return response
 
@@ -355,89 +369,8 @@ def unregister_from_event():
 # ==================User operations=======================
 
 
-@app.route("/sign-in", methods=["POST"])
-def sign_in():
-    data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
-    usertype = data.get("usertype")
-
-    # Find user by email
-    user = users_collection.find_one({"email": email, "usertype": usertype})
-
-    if user and check_password_hash(user["password"], password):
-        return jsonify({"message": "User signed in successfully"}), 200
-    else:
-        return jsonify({"error": "Sign in unsuccessful"}), 401
-
-
-@app.route("/register", methods=["POST"])
-def sign_up():
-    data = request.get_json()
-
-    # Ensure all required fields are provided
-    required_fields = [
-        "usertype",
-        "email",
-        "first_name",
-        "last_name",
-        "country_code",
-        "contact_number",
-        "password",
-        "confirm_password",
-    ]
-    missing_fields = [
-        field for field in required_fields if field not in data or not data[field]
-    ]
-
-    if missing_fields:
-        return (
-            jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}),
-            400,
-        )
-
-    usertype = data.get("usertype")
-    email = data.get("email")
-    first_name = data.get("first_name")
-    last_name = data.get("last_name")
-    country_code = data.get("country_code")
-    contact_number = data.get("contact_number")
-    password = data.get("password")
-    confirm_password = data.get("confirm_password")
-    ethnicity = data.get("ethnicity")
-    gender = data.get("gender")
-
-    # Check if passwords match
-    if password != confirm_password:
-        return jsonify({"error": "Passwords do not match"}), 400
-
-    # Check if user already exists
-    existing_user = users_collection.find_one({"email": email})
-    if existing_user:
-        return jsonify({"error": "User already exists"}), 400
-
-    # Hash the password
-    hashed_password = generate_password_hash(password)
-
-    # Create new user
-    user = {
-        "usertype": usertype,
-        "email": email,
-        "first_name": first_name,
-        "last_name": last_name,
-        "country_code": country_code,
-        "contact_number": contact_number,
-        "password": hashed_password,
-        "ethnicity": ethnicity,
-        "gender": gender,
-    }
-
-    users_collection.insert_one(user)
-    return jsonify({"message": "User registered successfully"}), 200
-
-
 # Get user info
-@app.route("/api/users/<user_id>", methods=["POST"])
+@app.route("/api/users/", methods=["POST"])
 def get_user(user_id):
     try:
         user = users.find_one({"_id": ObjectId(user_id)})
