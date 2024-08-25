@@ -8,6 +8,8 @@ client = MongoClient(
     "mongodb+srv://mscodetogive:team12isthewinner@cluster0.xnb7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 )
 db = client["MSCodeToGive"]
+users = db["users"]
+
 
 # Twilio setup (retrieve credentials from environment variables)
 
