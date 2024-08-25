@@ -29,13 +29,6 @@ badges = db["badges"]
 trainings = db["trainings"]
 registrations = db["registrations"]
 
-# Configure OpenAI API
-# openai.api_key = "40e3ab52523d497687165ec0ca61a36b"  # new key
-# openai.api_base = "https://hkust.azure-api.net"  # your endpoint should look like the following https://YOUR_RESOURCE_NAME.openai.azure.com/
-# openai.api_type = "azure"
-# openai.api_version = "2023-05-15"  # this may change in the future
-# deployment_name = "gpt-35-turbo"  # This will correspond to the custom name you chose for your deployment when you deployed a model.
-
 
 # ==================Event operations=======================
 
@@ -123,7 +116,7 @@ def create_event():
 
 
 # Get all events
-@app.route("/api/clients", methods=["GET"])
+@app.route("/api/events/get-all", methods=["GET"])
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -135,8 +128,8 @@ def get_all_events():
 
 
 # Get a specific event
-@app.route("/api/events/<event_id>", methods=["POST"])
-def get_event():
+@app.route("/api/events/get-specific/<event_id>", methods=["GET"])
+def get_event(event_id):
     try:
         event = events.find_one({"_id": ObjectId(event_id)})
         if event:
@@ -149,8 +142,8 @@ def get_event():
 
 
 # Update an event
-@app.route("/api/events/<event_id>", methods=["POST"])
-def update_event():
+@app.route("/api/events/update/<event_id>", methods=["POST"])
+def update_event(event_id):
     data = request.get_json()
     updated_event = {
         "createState": data.get("createState"),
@@ -167,11 +160,12 @@ def update_event():
     except Exception as e:
         return jsonify({"error": "failed to find the event"}), 500
 
-    if ((event["event_details"]["event_name"]) !=  (updated_event["event_details"]["event_name"])):
+    if (event["event_details"]["event_name"]) != (
+        updated_event["event_details"]["event_name"]
+    ):
         return jsonify({"error": "cannot change the event name"}), 500
-    if ((event["created_by"]) !=  (updated_event["created_by"])):
+    if (event["created_by"]) != (updated_event["created_by"]):
         return jsonify({"error": "cannot change who created the event"}), 500
- 
 
     try:
         result = events.update_one({"_id": ObjectId(event_id)}, {"$set": updated_event})
@@ -185,8 +179,8 @@ def update_event():
 
 
 # Delete an event
-@app.route("/api/events/<event_id>", methods=["POST"])
-def delete_event():
+@app.route("/api/events/delete/<event_id>", methods=["DELETE"])
+def delete_event(event_id):
     try:
         result = events.delete_one({"_id": ObjectId(event_id)})
         if result.deleted_count == 1:
@@ -201,7 +195,6 @@ def delete_event():
 
 
 # Registration operations
-# @app.route("/api/events/<event_id>/register", methods=["POST"])
 @app.route("/api/events/register", methods=["POST"])
 def register_for_event():
     data = request.get_json()
