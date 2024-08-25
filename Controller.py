@@ -15,11 +15,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 # connect to local frontend
 CORS(
     app,
-    resources={
-        r"/*": {
-            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app"]
-        }
-    },
+    resources={r"/*": {"origins": ["http://localhost:3000"]}},
 )
 # CORS(app)
 
