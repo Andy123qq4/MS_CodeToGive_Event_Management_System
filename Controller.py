@@ -614,12 +614,13 @@ def get_users_events():
     return response
 
 
-@app.route("/api/users/calendar/", methods=["POST"])
+@app.route("/api/users/calendar/", methods=["GET"])
 def get_users_calendar():
-    data = request.get_json()
+    # data = request.get_json()
 
     try:
-        user_id = data.get("user_id")
+        user_id = request.args.get("user_id")
+        # user_id = data.get("user_id")
         print(f"User ID: {user_id}")
     except Exception as e:
         return (
