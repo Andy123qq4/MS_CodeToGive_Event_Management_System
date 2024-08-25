@@ -437,7 +437,7 @@ def sign_up():
 
 
 # Get user info
-@app.route("/api/users/<user_id>", methods=["POST"])
+@app.route("/api/users/<user_id>", methods=["GET"])
 def get_user(user_id):
     try:
         user = users.find_one({"_id": ObjectId(user_id)})
@@ -451,7 +451,7 @@ def get_user(user_id):
 
 
 # Get user's events
-@app.route("/api/users/get-events/<user_id>", methods=["POST"])
+@app.route("/api/users/get-events/<user_id>", methods=["GET"])
 def get_users_events(user_id):
     try:
         all_events = list(events.find())
