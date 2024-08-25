@@ -12,7 +12,8 @@ import logging
 app = Flask(__name__)
 log = logging.getLogger(__name__)
 # connect to local frontend
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
+# CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
+CORS(app)
 
 """
 This file contains all API endpoints for the application.
@@ -80,6 +81,10 @@ def create_event():
         },
         "created_time": datetime.now(),
     }
+
+    # 添加可选的 isAppointment 属性
+    if "isAppointment" in data:
+        event["isAppointment"] = data["isAppointment"]
 
     duplicate_event = events.find_one(
         {
@@ -567,30 +572,68 @@ def get_users_events():
     return response
 
 
-@app.route("/api/users/calendar/<user_id>", methods=["POST"])
-def get_users_calendar(user_id):
+@app.route("/api/users/calendar/", methods=["POST"])
+def get_users_calendar():
+    data = request.get_json()
+
     try:
+        user_id = data.get("user_id")
+        print(f"User ID: {user_id}")
+    except Exception as e:
+        return (
+            jsonify(
+                {"code": 400, "description": "Bad Request", "data": {"error": str(e)}}
+            ),
+            400,
+        )
+
+    try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return (
+                jsonify({"code": 404, "description": "User not found", "data": {}}),
+                404,
+            )
+
+        role = user.get("usertype") + "s"
+        print(f"Role: {role}")
         all_events = list(events.find())
         event_list = []
+
         for event in all_events:
             event["_id"] = str(event["_id"])
-            participants = (
-                event["participants"]["clients"]
-                + event["participants"]["volunteers"]
-                + event["participants"]["admins"]
-            )
-            if user_id in participants:
+            print(f"Event ID: {event['_id']}")
+            print(f"Participants: {event['participants']}")
+
+            if role in event["participants"]:
+                participants = event["participants"][role]
+                print(f"Participants for role {role}: {participants}")
+            else:
+                print(f"Role {role} not found in participants")
+                participants = []
+
+            if any(participant["user_id"] == user_id for participant in participants):
                 event_list.append(
-                    [
-                        event["event_details"]["event_name"],
-                        event["event_details"]["start_date"],
-                        event["event_details"]["start_time"],
-                        event["event_details"]["location"],
-                        event["event_details"]["description"],
-                    ]
+                    {
+                        "event_name": event["event_details"]["event_name"],
+                        "start_date": event["event_details"]["start_date"],
+                        "start_time": event["event_details"]["start_time"],
+                        "location": event["event_details"]["location"],
+                        "description": event["event_details"]["description"],
+                    }
                 )
+
         print(event_list)
-        return jsonify(event_list), 200
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "description": "User's calendar events retrieved successfully",
+                    "data": event_list,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
