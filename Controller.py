@@ -40,6 +40,7 @@ def create_event():
     # Create a new event
     event = {
         # "id": data.get("id"),
+        "createState":data.get("createState"),
         "created_by": data.get("created_by"),
         "event_details": data.get("event_details"),
         "isDeleted": data.get("isDeleted"),
@@ -62,6 +63,7 @@ def create_event():
         response_data = {
             "code": 400,
             "description": "Event already exists",
+            "event_id": duplicate_event["_id"]
         }
         return make_response(jsonify(response_data), 400)
 
@@ -69,7 +71,7 @@ def create_event():
         result = events.insert_one(event)
         new_event = events.find_one({"_id": result.inserted_id})
         new_event["_id"] = str(new_event["_id"])
-        return make_response(jsonify(new_event), 201)
+        return make_response(jsonify({"Successfully created an event": new_event}), 201)
     except Exception as e:
         log.error(f"Error creating event: {e}")
         return make_response(jsonify({"error": str(e)}), 400)
@@ -106,6 +108,7 @@ def get_event(event_id):
 def update_event(event_id):
     data = request.get_json()
     updated_event = {
+        "createState": data.get("createState"),
         "created_by": data.get("created_by"),
         "event_details": data.get("event_details"),
         "isDeleted": data.get("isDeleted"),
