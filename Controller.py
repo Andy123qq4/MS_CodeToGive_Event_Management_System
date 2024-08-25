@@ -207,6 +207,9 @@ def register_for_event():
             "user_id": data.get("user_id"),
             "registered_at": datetime.now(),
         }
+        usertype = users.find_one({"_id": ObjectId(participant_data["user_id"])}).get(
+            "usertype"
+        )
     except Exception as e:
         response = make_response(
             jsonify(
@@ -230,25 +233,19 @@ def register_for_event():
         return response
 
     # Check if the attendee is already registered
-    for role in ["clients", "volunteers", "admins"]:
-        participants = event["participants"].get(role, [])
-        logging.debug(f"Role: {role}, Participants: {participants}")
-        for participant in participants:
-            logging.debug(f"Participant: {participant}, Type: {type(participant)}")
-            if (
-                isinstance(participant, dict)
-                and participant.get("user_id") == participant_data["user_id"]
-            ):
-                response = make_response(
-                    jsonify(
-                        {
-                            "code": 200,
-                            "description": "Attendee is already registered for this event",
-                        }
-                    ),
-                    200,
-                )
-                return response
+    participants = event["participants"].get(usertype, [])
+    for participant in participants:
+        if participant.get("user_id") == participant_data["user_id"]:
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 200,
+                        "description": "Attendee is already registered for this event",
+                    }
+                ),
+                200,
+            )
+            return response
 
     # Check if the event is full
     if "participants" in event:
@@ -267,8 +264,8 @@ def register_for_event():
                 )
                 return response
 
-    role_response = get_user(participant_data["user_id"])
-    role = role_response.get("usertype")
+    user = users.find_one({"_id": ObjectId(participant_data["user_id"])})
+    role = user.get("usertype")
     print(role)
 
     # Add the new participant to the correct role list in the event's participants
@@ -373,20 +370,35 @@ def unregister_from_event():
 @app.route("/api/users/sign-in", methods=["POST"])
 def sign_in():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
-    usertype = data.get("usertype")
 
-    # Find user by email
-    user = users.find_one({"email": email, "usertype": usertype})
+    try:
+        email = data.get("email")
+        password = data.get("password")
+        usertype = data.get("usertype")
 
-    if user and check_password_hash(user["password"], password):
-        return jsonify({"message": "User signed in successfully"}), 200
-    else:
-        return jsonify({"error": "Sign in unsuccessful"}), 401
+        # Find user by email
+        user = users.find_one({"email": email, "usertype": usertype})
+
+        if user and check_password_hash(user["password"], password):
+            user_id = str(user["_id"])
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 200,
+                        "description": "User signed in successfully",
+                        "data": user_id,
+                    }
+                ),
+                200,
+            )
+            return response
+        else:
+            return jsonify({"error": "Invalid email/password."}), 401
+    except Exception as e:
+        return jsonify({"error": "Invalid JSON data", "message": str(e)}), 400
 
 
-@app.route("/api/users/register", methods=["POST"])
+@app.route("/api/users/sign-up", methods=["POST"])
 def sign_up():
     data = request.get_json()
 
@@ -446,19 +458,31 @@ def sign_up():
         "ethnicity": ethnicity,
         "gender": gender,
     }
-
-    users.insert_one(user)
-    return jsonify({"message": "User registered successfully"}), 200
+    result = users.insert_one(user)
+    user_id = str(result.inserted_id)
+    response = make_response(
+        jsonify(
+            {
+                "code": 200,
+                "description": "User registered successfully",
+                "data": user_id,
+            }
+        ),
+        200,
+    )
+    return response
 
 
 # Get user info
 @app.route("/api/users/", methods=["POST"])
 def get_user():
+    data = request.get_json()
     try:
-        user_id = request.form.get("user_id")
+        user_id = data.get("user_id")
         user = users.find_one({"_id": ObjectId(user_id)})
+        print(user)
         if user:
-            # user["_id"] = str(user["_id"])
+            user["_id"] = str(user["_id"])
             return jsonify(user), 200
         else:
             return jsonify({"error": "User not found"}), 404
@@ -466,10 +490,24 @@ def get_user():
         return jsonify({"error": str(e)}), 500
 
 
-# Get user's events
-@app.route("/api/users/get-events/<user_id>", methods=["POST"])
-def get_users_events(user_id):
+# Get all users
+@app.route("/api/users/get-all", methods=["GET"])
+def get_all_users():
     try:
+        all_users = list(users.find())
+        for user in all_users:
+            user["_id"] = str(user["_id"])
+        return jsonify(all_users), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Get user's events
+@app.route("/api/users/get-events/", methods=["POST"])
+def get_users_events():
+    data = request.get_json()
+    try:
+        user_id = data.get("user_id")
         all_events = list(events.find())
         event_list = []
         for event in all_events:
@@ -518,4 +556,4 @@ def get_users_calendar(user_id):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
