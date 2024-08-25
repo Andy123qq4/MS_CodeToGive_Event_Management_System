@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, make_response
-from werkzeug.security import generate_password_hash, check_password_hash
+
+# from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from flask_cors import CORS, cross_origin
 from datetime import datetime
@@ -7,6 +8,8 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from whatsapp_reminder import send_whatsapp_message
 import logging
+import replicate
+from replicate.client import Client
 
 # import openai  # pip install openai==0.28 (old version)
 
@@ -33,7 +36,7 @@ users = db["users"]
 # accounts = db["accounts"]
 badges = db["badges"]
 # trainings = db["trainings"]
-registrations = db["registrations"]
+# registrations = db["registrations"]
 
 
 @app.before_request
@@ -408,7 +411,7 @@ def sign_in():
         # Find user by email
         user = users.find_one({"email": email, "usertype": usertype})
 
-        if user and check_password_hash(user["password"], password):
+        if user and user["password"] == password:
             user_id = str(user["_id"])
             response = make_response(
                 jsonify(
@@ -474,7 +477,7 @@ def sign_up():
         return jsonify({"error": "User already exists"}), 400
 
     # Hash the password
-    hashed_password = generate_password_hash(password)
+    # password = generate_password_hash(password)
 
     # Create new user
     user = {
@@ -484,7 +487,7 @@ def sign_up():
         "last_name": last_name,
         "country_code": country_code,
         "contact_number": contact_number,
-        "password": hashed_password,
+        "password": password,
         "ethnicity": ethnicity,
         "gender": gender,
     }
@@ -643,14 +646,43 @@ def get_users_events():
     return response
 
 
-@app.route("/api/users/calendar/", methods=["GET"])
-@cross_origin()
-def get_users_calendar():
-    # data = request.get_json()
-
+@app.route("/api/users/justforyou", methods=["GET"])
+def get_events_for_user():
     try:
         user_id = request.args.get("user_id")
-        # user_id = data.get("user_id")
+        all_events = list(events.find())
+        event_list = []
+        user_char_list = []
+        event_char_list = []
+
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["_id"] = str(user["_id"])
+        # else:
+        # return jsonify({"error": "User not found"}), 404
+        user_char_list.append(user["ethnicity"])
+        user_char_list.append(user["gender"])
+
+        for event in all_events:
+            event_char_list = []
+            event["_id"] = str(event["_id"])
+            event_char_list += event["event_details"]["target_audience"]
+            event_char_list += event["event_details"]["event_tags"]
+            # event_char_list v.s. user_char_list
+            for user_char in user_char_list:
+                if user_char in event_char_list:
+                    event_char_list.remove(user_char)
+            if len(event_char_list) == 0:
+                event_list.append(event)
+        return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/calendar/", methods=["GET"])
+def get_users_calendar():
+    try:
+        user_id = request.args.get("user_id")
         print(f"User ID: {user_id}")
     except Exception as e:
         return (
@@ -686,17 +718,7 @@ def get_users_calendar():
                 participants = []
 
             if any(participant["user_id"] == user_id for participant in participants):
-                event_list.append(
-                    {
-                        "event_name": event["event_details"]["event_name"],
-                        "start_date": event["event_details"]["start_date"],
-                        "start_time": event["event_details"]["start_time"],
-                        "end_date": event["event_details"]["end_date"],
-                        "end_time": event["event_details"]["end_time"],
-                        "location": event["event_details"]["location"],
-                        "description": event["event_details"]["description"],
-                    }
-                )
+                event_list.append(event)
 
         print(event_list)
         return (
@@ -715,7 +737,6 @@ def get_users_calendar():
 
 # Get all users
 @app.route("/api/users/get-all", methods=["GET"])
-@cross_origin()
 def get_all_users():
     try:
         all_users = list(users.find())
@@ -724,11 +745,10 @@ def get_all_users():
         return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 
 # ===============Send Reminders=====================
 @app.route("/api/events/send-reminder/", methods=["POST"])
-@cross_origin()
 def handle_send_message():
     data = request.get_json()
     try:
@@ -736,7 +756,7 @@ def handle_send_message():
         event = events.find_one({"_id": ObjectId(event_id)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
     event_name = event["event_details"]["event_name"]
     start_date = event["event_details"]["start_date"]
     event_location = event["event_details"]["location"]
@@ -745,8 +765,6 @@ def handle_send_message():
     end_date = event["event_details"]["end_date"]
     message = "Please bring along your Mizookies and your pookies"
 
-
-    
     sample_message = (
         f"🔔 Thank you for signing up for {event_name} with Zubin Foundation! It is happening on {start_date} at {start_time}.\n"
         f" The event will be held at {event_location}. {message}"
@@ -769,8 +787,44 @@ def handle_send_message():
         return jsonify({"error": str(e)}), 500
 
 
+# ==================Chatbot=======================
+
+
+@app.route("/api/chatbot/", methods=["POST"])
+def chatbot():
+    replicate = Client(api_token="r8_5t2aobLKd4sOf1AKIvPq3zOLYKVkxiF083bcg")
+    data = request.get_json()
+    try:
+        query = data.get("query")
+        # input = {
+        #     "prompt": query,
+        #     "max_new_tokens": 512,
+        #     "prompt_template": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+        # }
+        # response = []
+        # for word in replicate.stream("meta/meta-llama-3-8b-instruct", input=input):
+        #     response.append(word)
+        # print(response, end="")
+        output = replicate.run(
+            "meta/meta-llama-3-8b-instruct",
+            input={
+                "debug": False,
+                "top_k": 50,
+                "top_p": 1,
+                "prompt": query,
+                "temperature": 0,
+                # "system_prompt": default_system_prompt,
+                "max_new_tokens": 128,
+                "min_new_tokens": -1,
+            },
+        )
+
+        return jsonify({"response": "".join(output)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ==================Main=======================
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="localhost", port=5000, debug=True)
