@@ -1,10 +1,11 @@
 from flask import Flask, jsonify, request, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from whatsapp_reminder import send_whatsapp_message
 import logging
 
 # import openai  # pip install openai==0.28 (old version)
@@ -52,6 +53,7 @@ def handle_options_request():
 
 # Create a new event
 @app.route("/api/events/create/", methods=["POST"])
+@cross_origin()
 def create_event():
     data = request.get_json()
 
@@ -140,6 +142,7 @@ def create_event():
 
 # Get all events
 @app.route("/api/events/get-all/", methods=["GET"])
+@cross_origin()
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -152,6 +155,7 @@ def get_all_events():
 
 # Get a specific event
 @app.route("/api/events/get-specific/", methods=["POST"])
+@cross_origin()
 def get_event():
     data = request.get_json()
     try:
@@ -169,6 +173,7 @@ def get_event():
 # Update an event
 # Todo, change to POST
 @app.route("/api/events/update/<event_id>", methods=["POST"])
+@cross_origin()
 def update_event(event_id):
     data = request.get_json()
     updated_event = {
@@ -207,6 +212,7 @@ def update_event(event_id):
 # Delete an event
 # Todo, change to POST
 @app.route("/api/events/delete/<event_id>", methods=["DELETE"])
+@cross_origin()
 def delete_event(event_id):
     try:
         result = events.delete_one({"_id": ObjectId(event_id)})
@@ -223,6 +229,7 @@ def delete_event(event_id):
 
 # Registration operations
 @app.route("/api/events/register/", methods=["POST"])
+@cross_origin()
 def register_for_event():
     data = request.get_json()
 
@@ -316,6 +323,7 @@ def register_for_event():
 
 
 @app.route("/api/events/unregister/", methods=["POST"])
+@cross_origin()
 def unregister_from_event():
     data = request.get_json()
 
@@ -388,6 +396,7 @@ def unregister_from_event():
 
 
 @app.route("/api/users/sign-in/", methods=["POST"])
+@cross_origin()
 def sign_in():
     data = request.get_json()
 
@@ -419,6 +428,7 @@ def sign_in():
 
 
 @app.route("/api/users/sign-up/", methods=["POST"])
+@cross_origin()
 def sign_up():
     data = request.get_json()
 
@@ -495,6 +505,7 @@ def sign_up():
 
 # Get user info
 @app.route("/api/users/", methods=["POST"])
+@cross_origin()
 def get_user():
     data = request.get_json()
     try:
@@ -529,6 +540,7 @@ def get_user():
 
 # Get user info for WhatsApp
 @app.route("/api/userswhatsapp/", methods=["POST"])
+@cross_origin()
 def get_userswhatsapp():
     data = request.get_json()
     try:
@@ -564,6 +576,7 @@ def get_userswhatsapp():
 
 # Get user's events
 @app.route("/api/users/get-events", methods=["GET"])
+@cross_origin()
 def get_users_events():
     try:
         user_id = request.args.get("user_id")
@@ -631,6 +644,7 @@ def get_users_events():
 
 
 @app.route("/api/users/calendar/", methods=["GET"])
+@cross_origin()
 def get_users_calendar():
     # data = request.get_json()
 
@@ -701,6 +715,7 @@ def get_users_calendar():
 
 # Get all users
 @app.route("/api/users/get-all", methods=["GET"])
+@cross_origin()
 def get_all_users():
     try:
         all_users = list(users.find())
@@ -709,10 +724,51 @@ def get_all_users():
         return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+# ===============Send Reminders=====================
+@app.route("/api/events/send-reminder/", methods=["POST"])
+@cross_origin()
+def handle_send_message():
+    data = request.get_json()
+    try:
+        event_id = data.get("event_id")
+        event = events.find_one({"_id": ObjectId(event_id)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    event_name = event["event_details"]["event_name"]
+    start_date = event["event_details"]["start_date"]
+    event_location = event["event_details"]["location"]
+    start_time = event["event_details"]["start_time"]
+    end_time = event["event_details"]["end_time"]
+    end_date = event["event_details"]["end_date"]
+    message = "Please bring along your Mizookies and your pookies"
+
+
+    
+    sample_message = (
+        f"🔔 Thank you for signing up for {event_name} with Zubin Foundation! It is happening on {start_date} at {start_time}.\n"
+        f" The event will be held at {event_location}. {message}"
+    )
+    # Hardcoded list of user phone numbers
+    users = [
+        'whatsapp:+85290473671', # Replace with actual WhatsApp numbers
+        'whatsapp:+85294844936'
+        # 'whatsapp:+85253192036'
+        # 'whatsapp:+85234567890',
+        # 'whatsapp:+85245678901'
+    ]
+
+    try:
+        for phone_number in users:
+            send_whatsapp_message(phone_number, sample_message)
+        return jsonify({"status": "success", "message": "Message sent successfully!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ==================Main=======================
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="localhost", port=8080, debug=True)
