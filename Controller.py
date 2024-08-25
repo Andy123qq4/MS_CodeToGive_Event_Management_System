@@ -410,7 +410,7 @@ def sign_in():
         # Find user by email
         user = users.find_one({"email": email, "usertype": usertype})
 
-        if user and check_password_hash(user["password"], password):
+        if user and user["password"] == password:
             user_id = str(user["_id"])
             response = make_response(
                 jsonify(
@@ -476,7 +476,7 @@ def sign_up():
         return jsonify({"error": "User already exists"}), 400
 
     # Hash the password
-    hashed_password = generate_password_hash(password)
+    # password = generate_password_hash(password)
 
     # Create new user
     user = {
@@ -486,7 +486,7 @@ def sign_up():
         "last_name": last_name,
         "country_code": country_code,
         "contact_number": contact_number,
-        "password": hashed_password,
+        "password": password,
         "ethnicity": ethnicity,
         "gender": gender,
     }
