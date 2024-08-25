@@ -9,7 +9,7 @@ client = MongoClient(
     "mongodb+srv://mscodetogive:team12isthewinner@cluster0.xnb7t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 )
 db = client["MSCodeToGive"]
-users_collection = db["users"]  # Collection for user registrations
+users = db["users"]  # Collection for user registrations
 
 
 @app.route("/api/users/sign-in", methods=["POST"])
@@ -20,7 +20,7 @@ def sign_in():
     usertype = data.get("usertype")
 
     # Find user by email
-    user = users_collection.find_one({"email": email, "usertype": usertype})
+    user = users.find_one({"email": email, "usertype": usertype})
 
     if user and check_password_hash(user["password"], password):
         return jsonify({"message": "User signed in successfully"}), 200
@@ -69,7 +69,7 @@ def sign_up():
         return jsonify({"error": "Passwords do not match"}), 400
 
     # Check if user already exists
-    existing_user = users_collection.find_one({"email": email})
+    existing_user = users.find_one({"email": email})
     if existing_user:
         return jsonify({"error": "User already exists"}), 400
 
@@ -89,7 +89,7 @@ def sign_up():
         "gender": gender,
     }
 
-    users_collection.insert_one(user)
+    users.insert_one(user)
     return jsonify({"message": "User registered successfully"}), 200
 
 

@@ -12,7 +12,15 @@ import logging
 app = Flask(__name__)
 log = logging.getLogger(__name__)
 # connect to local frontend
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000"]}})
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": ["http://localhost:3000", "https://team12-frontend.vercel.app"]
+        }
+    },
+)
+# CORS(app)
 
 """
 This file contains all API endpoints for the application.
@@ -26,9 +34,9 @@ db = client["MSCodeToGive"]
 
 events = db["event"]
 users = db["users"]
-accounts = db["accounts"]
+# accounts = db["accounts"]
 badges = db["badges"]
-trainings = db["trainings"]
+# trainings = db["trainings"]
 registrations = db["registrations"]
 
 
@@ -36,7 +44,7 @@ registrations = db["registrations"]
 
 
 # Create a new event
-@app.route("/api/events/create", methods=["POST"])
+@app.route("/api/events/create/", methods=["POST"])
 def create_event():
     data = request.get_json()
 
@@ -44,6 +52,7 @@ def create_event():
     event = {
         "createState": "Finished",
         "isPublished": data.get("isPublished", False),
+        "isAppointment": data.get("isAppointment"),
         "isDeleted": False,
         "created_by": data.get("created_by", "a1"),
         "event_details": {
@@ -79,7 +88,12 @@ def create_event():
             "admins": data.get("participants", {}).get("admins", []),
         },
         "created_time": datetime.now(),
+        "isAppointment": False,
     }
+
+    # 添加可选的 isAppointment 属性
+    if "isAppointment" in data:
+        event["isAppointment"] = data["isAppointment"]
 
     duplicate_event = events.find_one(
         {
@@ -118,7 +132,7 @@ def create_event():
 
 
 # Get all events
-@app.route("/api/events/get-all", methods=["GET"])
+@app.route("/api/events/get-all/", methods=["GET"])
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -130,9 +144,11 @@ def get_all_events():
 
 
 # Get a specific event
-@app.route("/api/events/get-specific/<event_id>", methods=["GET"])
-def get_event(event_id):
+@app.route("/api/events/get-specific/", methods=["POST"])
+def get_event():
+    data = request.get_json()
     try:
+        event_id = data.get("event_id")
         event = events.find_one({"_id": ObjectId(event_id)})
         if event:
             event["_id"] = str(event["_id"])
@@ -144,6 +160,7 @@ def get_event(event_id):
 
 
 # Update an event
+# Todo, change to POST
 @app.route("/api/events/update/<event_id>", methods=["POST"])
 def update_event(event_id):
     data = request.get_json()
@@ -181,6 +198,7 @@ def update_event(event_id):
 
 
 # Delete an event
+# Todo, change to POST
 @app.route("/api/events/delete/<event_id>", methods=["DELETE"])
 def delete_event(event_id):
     try:
@@ -197,7 +215,7 @@ def delete_event(event_id):
 
 
 # Registration operations
-@app.route("/api/events/register", methods=["POST"])
+@app.route("/api/events/register/", methods=["POST"])
 def register_for_event():
     data = request.get_json()
 
@@ -207,6 +225,9 @@ def register_for_event():
             "user_id": data.get("user_id"),
             "registered_at": datetime.now(),
         }
+        usertype = users.find_one({"_id": ObjectId(participant_data["user_id"])}).get(
+            "usertype"
+        )
     except Exception as e:
         response = make_response(
             jsonify(
@@ -230,37 +251,44 @@ def register_for_event():
         return response
 
     # Check if the attendee is already registered
+    participants = event["participants"].get(usertype + "s", [])
+    for participant in participants:
+        if participant.get("user_id") == participant_data["user_id"]:
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 400,
+                        "description": "Attendee is already registered for this event",
+                    }
+                ),
+                400,
+            )
+            return response
+
+    # Check if the event is full
     if "participants" in event:
-        for participant in event["participants"]:
-            if participant["user_id"] == participant_data["user_id"]:
+        # if no max_participants is set, assume no limit
+        max_participants = event.get("event_details", {}).get("max_participants", None)
+        if max_participants is not None:
+            total_participants = sum(
+                len(event["participants"].get(role, []))
+                for role in ["clients", "volunteers"]
+            )
+            if total_participants >= max_participants:
                 response = make_response(
-                    jsonify(
-                        {
-                            "code": 200,
-                            "description": "Attendee is already registered for this event",
-                        }
-                    ),
-                    200,
+                    jsonify({"code": 400, "description": "Event is full"}),
+                    400,
                 )
                 return response
-        # Check if the event is full
-        if "participants" in event:
-            # Todo, add max_participants to event_details
-            # if no max_participants is set, assume no limit
-            max_participants = event.get("event_details", {}).get(
-                "max_participants", None
-            )
-            if max_participants is not None:
-                if len(event["participants"]) >= max_participants:
-                    response = make_response(
-                        jsonify({"code": 400, "description": "Event is full"}),
-                        400,
-                    )
-                    return response
 
-    # Add the new participant to the event's participants list
+    user = users.find_one({"_id": ObjectId(participant_data["user_id"])})
+    role = user.get("usertype") + "s"
+    print(role)
+
+    # Add the new participant to the correct role list in the event's participants
     events.update_one(
-        {"_id": ObjectId(event_id)}, {"$push": {"participants": participant_data}}
+        {"_id": ObjectId(event_id)},
+        {"$push": {f"participants.{role}": participant_data}},
     )
 
     # Retrieve the updated event document
@@ -268,18 +296,21 @@ def register_for_event():
     updated_event["_id"] = str(updated_event["_id"])
 
     response = make_response(
-        jsonify({"code": 201, "description": "Created", "data": updated_event}), 201
+        jsonify({"code": 201, "description": "Event created.", "data": updated_event}),
+        201,
     )
     return response
 
 
-@app.route("/api/events/unregister", methods=["POST"])
+@app.route("/api/events/unregister/", methods=["POST"])
 def unregister_from_event():
     data = request.get_json()
 
     try:
         event_id = data.get("event_id")
         user_id = data.get("user_id")
+        user = users.find_one({"_id": ObjectId(user_id)})
+        role = user.get("usertype") + "s"
     except Exception as e:
         response = make_response(
             jsonify(
@@ -303,22 +334,9 @@ def unregister_from_event():
         return response
 
     # Check if the attendee is registered
-    if "participants" in event:
-        participant = next(
-            (p for p in event["participants"] if p["user_id"] == user_id), None
-        )
-        if not participant:
-            response = make_response(
-                jsonify(
-                    {
-                        "code": 404,
-                        "description": "Attendee is not registered for this event",
-                    }
-                ),
-                404,
-            )
-            return response
-    else:
+    participants = event["participants"].get(role, [])
+    participant = next((p for p in participants if p["user_id"] == user_id), None)
+    if not participant:
         response = make_response(
             jsonify(
                 {
@@ -332,7 +350,8 @@ def unregister_from_event():
 
     # Remove the participant from the event's participants list
     events.update_one(
-        {"_id": ObjectId(event_id)}, {"$pull": {"participants": {"user_id": user_id}}}
+        {"_id": ObjectId(event_id)},
+        {"$pull": {f"participants.{role}": {"user_id": user_id}}},
     )
 
     # Retrieve the updated event document
@@ -355,23 +374,38 @@ def unregister_from_event():
 # ==================User operations=======================
 
 
-@app.route("/sign-in", methods=["POST"])
+@app.route("/api/users/sign-in/", methods=["POST"])
 def sign_in():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
-    usertype = data.get("usertype")
 
-    # Find user by email
-    user = users_collection.find_one({"email": email, "usertype": usertype})
+    try:
+        email = data.get("email")
+        password = data.get("password")
+        usertype = data.get("usertype")
 
-    if user and check_password_hash(user["password"], password):
-        return jsonify({"message": "User signed in successfully"}), 200
-    else:
-        return jsonify({"error": "Sign in unsuccessful"}), 401
+        # Find user by email
+        user = users.find_one({"email": email, "usertype": usertype})
+
+        if user and check_password_hash(user["password"], password):
+            user_id = str(user["_id"])
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 200,
+                        "description": "User signed in successfully",
+                        "data": user_id,
+                    }
+                ),
+                200,
+            )
+            return response
+        else:
+            return jsonify({"error": "Invalid email/password."}), 401
+    except Exception as e:
+        return jsonify({"error": "Invalid JSON data", "message": str(e)}), 400
 
 
-@app.route("/register", methods=["POST"])
+@app.route("/api/users/sign-up/", methods=["POST"])
 def sign_up():
     data = request.get_json()
 
@@ -412,7 +446,7 @@ def sign_up():
         return jsonify({"error": "Passwords do not match"}), 400
 
     # Check if user already exists
-    existing_user = users_collection.find_one({"email": email})
+    existing_user = users.find_one({"email": email})
     if existing_user:
         return jsonify({"error": "User already exists"}), 400
 
@@ -431,69 +465,198 @@ def sign_up():
         "ethnicity": ethnicity,
         "gender": gender,
     }
-
-    users_collection.insert_one(user)
-    return jsonify({"message": "User registered successfully"}), 200
+    result = users.insert_one(user)
+    user_id = str(result.inserted_id)
+    response = make_response(
+        jsonify(
+            {
+                "code": 200,
+                "description": "User registered successfully",
+                "data": user_id,
+            }
+        ),
+        200,
+    )
+    return response
 
 
 # Get user info
-@app.route("/api/users/<user_id>", methods=["GET"])
-def get_user(user_id):
+@app.route("/api/users/", methods=["POST"])
+def get_user():
+    data = request.get_json()
     try:
+        user_id = data.get("user_id")
         user = users.find_one({"_id": ObjectId(user_id)})
         if user:
             user["_id"] = str(user["_id"])
-            return jsonify(user), 200
+            response = make_response(
+                jsonify({"code": 200, "description": "User found!", "data": user}),
+                200,
+            )
+            return response
         else:
-            return jsonify({"error": "User not found"}), 404
+            response = make_response(
+                jsonify({"code": 404, "description": "User not found!", "data": {}}),
+                404,
+            )
+            return response
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+        return response
 
 
 # Get user's events
-@app.route("/api/users/get-events/<user_id>", methods=["GET"])
-def get_users_events(user_id):
+@app.route("/api/users/get-events/", methods=["POST"])
+def get_users_events():
+    data = request.get_json()
     try:
+        user_id = data.get("user_id")
+    except Exception as e:
+        response = make_response(
+            jsonify(
+                {"code": 400, "description": "Bad Request", "data": {"error": str(e)}}
+            ),
+            400,
+        )
+        return response
+
+    try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            response = make_response(
+                jsonify({"code": 404, "description": "User not found", "data": {}}),
+                404,
+            )
+            return response
+
+        role = user.get("usertype") + "s"
+        print(role)
         all_events = list(events.find())
         event_list = []
+
         for event in all_events:
             event["_id"] = str(event["_id"])
-            participants = (
-                event["participants"]["clients"]
-                + event["participants"]["volunteers"]
-                + event["participants"]["admins"]
-            )
-            if user_id in participants:
+
+            # Check if role exists in participants
+            if role in event["participants"]:
+                participants = event["participants"][role]
+            else:
+                print(f"Role {role} not found in participants")
+                participants = []
+
+            if any(participant["user_id"] == user_id for participant in participants):
                 event_list.append(event["_id"])
-        return jsonify(event_list), 200
+
+        response = make_response(
+            jsonify(
+                {
+                    "code": 200,
+                    "description": "User events retrieved successfully",
+                    "data": event_list,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+
+    return response
+
+
+@app.route("/api/users/calendar/", methods=["POST"])
+def get_users_calendar():
+    data = request.get_json()
+
+    try:
+        user_id = data.get("user_id")
+        print(f"User ID: {user_id}")
+    except Exception as e:
+        return (
+            jsonify(
+                {"code": 400, "description": "Bad Request", "data": {"error": str(e)}}
+            ),
+            400,
+        )
+
+    try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return (
+                jsonify({"code": 404, "description": "User not found", "data": {}}),
+                404,
+            )
+
+        role = user.get("usertype") + "s"
+        print(f"Role: {role}")
+        all_events = list(events.find())
+        event_list = []
+
+        for event in all_events:
+            event["_id"] = str(event["_id"])
+            print(f"Event ID: {event['_id']}")
+            print(f"Participants: {event['participants']}")
+
+            if role in event["participants"]:
+                participants = event["participants"][role]
+                print(f"Participants for role {role}: {participants}")
+            else:
+                print(f"Role {role} not found in participants")
+                participants = []
+
+            if any(participant["user_id"] == user_id for participant in participants):
+                event_list.append(
+                    {
+                        "event_name": event["event_details"]["event_name"],
+                        "start_date": event["event_details"]["start_date"],
+                        "start_time": event["event_details"]["start_time"],
+                        "end_date": event["event_details"]["end_date"],
+                        "end_time": event["event_details"]["end_time"],
+                        "location": event["event_details"]["location"],
+                        "description": event["event_details"]["description"],
+                    }
+                )
+
+        print(event_list)
+        return (
+            jsonify(
+                {
+                    "code": 200,
+                    "description": "User's calendar events retrieved successfully",
+                    "data": event_list,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/users/calendar/<user_id>", methods=["POST"])
-def get_users_calendar(user_id):
+# Get all users
+@app.route("/api/users/get-all", methods=["GET"])
+def get_all_users():
     try:
-        all_events = list(events.find())
-        event_list = []
-        for event in all_events:
-            event["_id"] = str(event["_id"])
-            participants = (
-                event["participants"]["clients"]
-                + event["participants"]["volunteers"]
-                + event["participants"]["admins"]
-            )
-            if user_id in participants:
-                event_list.append(
-                    [
-                        event["event_details"]["event_name"],
-                        event["event_details"]["start_date"],
-                        event["event_details"]["start_time"],
-                        event["event_details"]["location"],
-                        event["event_details"]["description"],
-                    ]
-                )
-        print(event_list)
-        return jsonify(event_list), 200
+        all_users = list(users.find())
+        for user in all_users:
+            user["_id"] = str(user["_id"])
+        return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -502,4 +665,4 @@ def get_users_calendar(user_id):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
