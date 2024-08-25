@@ -11,7 +11,7 @@ import logging
 
 log = logging.getLogger(__name__)
 app = Flask(__name__)
-app.config["CORS_HEADERS"] = "Content-Type"
+# app.config["CORS_HEADERS"] = "Content-Type"
 # connect to local frontend
 CORS(
     app,
