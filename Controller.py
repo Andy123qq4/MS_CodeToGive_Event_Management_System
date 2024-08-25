@@ -26,9 +26,9 @@ db = client["MSCodeToGive"]
 
 events = db["event"]
 users = db["users"]
-accounts = db["accounts"]
+# accounts = db["accounts"]
 badges = db["badges"]
-trainings = db["trainings"]
+# trainings = db["trainings"]
 registrations = db["registrations"]
 
 
@@ -267,7 +267,8 @@ def register_for_event():
                 )
                 return response
 
-    role = get_user(participant_data["user_id"])
+    role_response = get_user(participant_data["user_id"])
+    role = role_response.get("usertype")
     print(role)
 
     # Add the new participant to the correct role list in the event's participants
@@ -369,13 +370,95 @@ def unregister_from_event():
 # ==================User operations=======================
 
 
+@app.route("/api/users/sign-in", methods=["POST"])
+def sign_in():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    usertype = data.get("usertype")
+
+    # Find user by email
+    user = users.find_one({"email": email, "usertype": usertype})
+
+    if user and check_password_hash(user["password"], password):
+        return jsonify({"message": "User signed in successfully"}), 200
+    else:
+        return jsonify({"error": "Sign in unsuccessful"}), 401
+
+
+@app.route("/api/users/register", methods=["POST"])
+def sign_up():
+    data = request.get_json()
+
+    # Ensure all required fields are provided
+    required_fields = [
+        "usertype",
+        "email",
+        "first_name",
+        "last_name",
+        "country_code",
+        "contact_number",
+        "password",
+        "confirm_password",
+    ]
+    missing_fields = [
+        field for field in required_fields if field not in data or not data[field]
+    ]
+
+    if missing_fields:
+        return (
+            jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}),
+            400,
+        )
+
+    usertype = data.get("usertype")
+    email = data.get("email")
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+    country_code = data.get("country_code")
+    contact_number = data.get("contact_number")
+    password = data.get("password")
+    confirm_password = data.get("confirm_password")
+    ethnicity = data.get("ethnicity")
+    gender = data.get("gender")
+
+    # Check if passwords match
+    if password != confirm_password:
+        return jsonify({"error": "Passwords do not match"}), 400
+
+    # Check if user already exists
+    existing_user = users.find_one({"email": email})
+    if existing_user:
+        return jsonify({"error": "User already exists"}), 400
+
+    # Hash the password
+    hashed_password = generate_password_hash(password)
+
+    # Create new user
+    user = {
+        "usertype": usertype,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "country_code": country_code,
+        "contact_number": contact_number,
+        "password": hashed_password,
+        "ethnicity": ethnicity,
+        "gender": gender,
+    }
+
+    users.insert_one(user)
+    return jsonify({"message": "User registered successfully"}), 200
+
+
 # Get user info
 @app.route("/api/users/", methods=["POST"])
-def get_user(user_id):
+def get_user():
     try:
+        user_id = request.form.get("user_id")
         user = users.find_one({"_id": ObjectId(user_id)})
         if user:
-            user["_id"] = str(user["_id"])
+            # user["_id"] = str(user["_id"])
             return jsonify(user), 200
         else:
             return jsonify({"error": "User not found"}), 404
