@@ -11,13 +11,11 @@ import logging
 
 log = logging.getLogger(__name__)
 app = Flask(__name__)
-# app.config["CORS_HEADERS"] = "Content-Type"
-# connect to local frontend
+app.config["CORS_HEADERS"] = "Content-Type"
 CORS(
     app,
-    resources={r"/*": {"origins": ["http://localhost:3000"]}},
+    resources={r"/*": {"origins": "*"}},
 )
-# CORS(app)
 
 """
 This file contains all API endpoints for the application.
@@ -35,6 +33,18 @@ users = db["users"]
 badges = db["badges"]
 # trainings = db["trainings"]
 registrations = db["registrations"]
+
+
+@app.before_request
+def handle_options_request():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Methods", "GET, POST, DELETE")
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type, Authorization"
+        )
+        return response
 
 
 # ==================Event operations=======================
@@ -88,7 +98,7 @@ def create_event():
         "isAppointment": False,
     }
 
-    # 添加可选的 isAppointment 属性
+    # optional isAppointment
     if "isAppointment" in data:
         event["isAppointment"] = data["isAppointment"]
 
@@ -293,7 +303,13 @@ def register_for_event():
     updated_event["_id"] = str(updated_event["_id"])
 
     response = make_response(
-        jsonify({"code": 201, "description": "Event created.", "data": updated_event}),
+        jsonify(
+            {
+                "code": 201,
+                "description": "Registered the event!.",
+                "data": updated_event,
+            }
+        ),
         201,
     )
     return response
