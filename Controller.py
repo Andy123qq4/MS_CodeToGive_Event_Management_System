@@ -80,6 +80,7 @@ def create_event():
             "admins": data.get("participants", {}).get("admins", []),
         },
         "created_time": datetime.now(),
+        "isAppointment": False,
     }
 
     # 添加可选的 isAppointment 属性
