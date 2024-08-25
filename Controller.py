@@ -716,6 +716,7 @@ def get_all_users():
 
 # ===============Send Reminders=====================
 @app.route("/api/events/send-reminder/", methods=["POST"])
+@cross_origin()
 def handle_send_message():
     data = request.get_json()
     try:
