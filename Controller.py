@@ -446,9 +446,19 @@ def sign_up():
         "ethnicity": ethnicity,
         "gender": gender,
     }
-
-    users.insert_one(user)
-    return jsonify({"message": "User registered successfully"}), 200
+    result = users.insert_one(user)
+    user_id = str(result.inserted_id)
+    response = make_response(
+        jsonify(
+            {
+                "code": 200,
+                "description": "User registered successfully",
+                "data": user_id,
+            }
+        ),
+        200,
+    )
+    return response
 
 
 # Get user info
