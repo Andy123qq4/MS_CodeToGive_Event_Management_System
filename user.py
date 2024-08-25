@@ -83,6 +83,43 @@ def get_users_calendar(user_id):
         return jsonify({"error": str(e)}), 500
 
 
+
+# Get events for user
+@app.route("/users/get-events-for-user/<user_id>", methods=["POST"])
+def get_events_for_user(user_id):
+    try:
+        all_events = list(events.find())
+        event_list = []
+        user_char_list = []
+        event_char_list = []
+
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["_id"] = str(user["_id"])
+        # else:
+        # return jsonify({"error": "User not found"}), 404
+        user_char_list.append(user["ethnicity"])
+        user_char_list.append(user["gender"])
+
+        for event in all_events:
+            event_char_list = []
+            event["_id"] = str(event["_id"])
+            event_char_list += event["event_details"]["target_audience"]
+            event_char_list += event["event_details"]["event_tags"]
+            # event_char_list v.s. user_char_list
+            for user_char in user_char_list:
+                if user_char in event_char_list:
+                    event_char_list.remove(user_char)
+            if len(event_char_list) == 0:
+                event_list.append(event["_id"])
+        return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+
 # ==================Main=======================
 """
 if __name__ == "__main__":
