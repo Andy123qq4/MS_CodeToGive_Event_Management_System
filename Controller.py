@@ -373,17 +373,32 @@ def unregister_from_event():
 @app.route("/api/users/sign-in", methods=["POST"])
 def sign_in():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
-    usertype = data.get("usertype")
 
-    # Find user by email
-    user = users.find_one({"email": email, "usertype": usertype})
+    try:
+        email = data.get("email")
+        password = data.get("password")
+        usertype = data.get("usertype")
 
-    if user and check_password_hash(user["password"], password):
-        return jsonify({"message": "User signed in successfully"}), 200
-    else:
-        return jsonify({"error": "Sign in unsuccessful"}), 401
+        # Find user by email
+        user = users.find_one({"email": email, "usertype": usertype})
+
+        if user and check_password_hash(user["password"], password):
+            user_id = str(user["_id"])
+            response = make_response(
+                jsonify(
+                    {
+                        "code": 200,
+                        "description": "User signed in successfully",
+                        "data": user_id,
+                    }
+                ),
+                200,
+            )
+            return response
+        else:
+            return jsonify({"error": "Invalid email/password."}), 401
+    except Exception as e:
+        return jsonify({"error": "Invalid JSON data", "message": str(e)}), 400
 
 
 @app.route("/api/users/sign-up", methods=["POST"])
@@ -528,4 +543,4 @@ def get_users_calendar(user_id):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
