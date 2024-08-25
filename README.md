@@ -1,10 +1,10 @@
 # team12
 
 ## Frontend:
-Florence
 Furgy
 Josiah
 Uday
+Alikhan
 
 ### Language:
 JS / React
@@ -14,6 +14,7 @@ Andy
 Angus
 Alikhan
 Justin
+Florence
 
 ### Language
 Python
