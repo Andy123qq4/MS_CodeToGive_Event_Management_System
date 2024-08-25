@@ -10,6 +10,7 @@ import logging
 # import openai  # pip install openai==0.28 (old version)
 
 app = Flask(__name__)
+app.config["CORS_HEADERS"] = "Content-Type"
 log = logging.getLogger(__name__)
 # connect to local frontend
 # CORS(
