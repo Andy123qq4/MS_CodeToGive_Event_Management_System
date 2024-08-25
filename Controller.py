@@ -20,7 +20,7 @@ CORS(
         }
     },
 )
-CORS(app)
+# CORS(app)
 
 """
 This file contains all API endpoints for the application.
