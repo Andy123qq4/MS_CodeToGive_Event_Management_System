@@ -130,9 +130,11 @@ def get_all_events():
 
 
 # Get a specific event
-@app.route("/api/events/get-specific/<event_id>", methods=["GET"])
-def get_event(event_id):
+@app.route("/api/events/get-specific", methods=["POST"])
+def get_event():
+    data = request.get_json()
     try:
+        event_id = data.get("event_id")
         event = events.find_one({"_id": ObjectId(event_id)})
         if event:
             event["_id"] = str(event["_id"])
@@ -233,17 +235,17 @@ def register_for_event():
         return response
 
     # Check if the attendee is already registered
-    participants = event["participants"].get(usertype, [])
+    participants = event["participants"].get(usertype + "s", [])
     for participant in participants:
         if participant.get("user_id") == participant_data["user_id"]:
             response = make_response(
                 jsonify(
                     {
-                        "code": 200,
+                        "code": 400,
                         "description": "Attendee is already registered for this event",
                     }
                 ),
-                200,
+                400,
             )
             return response
 
@@ -469,26 +471,31 @@ def get_user():
     try:
         user_id = data.get("user_id")
         user = users.find_one({"_id": ObjectId(user_id)})
-        print(user)
         if user:
             user["_id"] = str(user["_id"])
-            return jsonify(user), 200
+            response = make_response(
+                jsonify({"code": 200, "description": "User found!", "data": user}),
+                200,
+            )
+            return response
         else:
-            return jsonify({"error": "User not found"}), 404
+            response = make_response(
+                jsonify({"code": 404, "description": "User not found!", "data": {}}),
+                404,
+            )
+            return response
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# Get all users
-@app.route("/api/users/get-all", methods=["GET"])
-def get_all_users():
-    try:
-        all_users = list(users.find())
-        for user in all_users:
-            user["_id"] = str(user["_id"])
-        return jsonify(all_users), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+        return response
 
 
 # Get user's events
@@ -497,6 +504,16 @@ def get_users_events():
     data = request.get_json()
     try:
         user_id = data.get("user_id")
+    except Exception as e:
+        response = make_response(
+            jsonify(
+                {"code": 400, "description": "Bad Request", "data": {"error": str(e)}}
+            ),
+            400,
+        )
+        return response
+
+    try:
         all_events = list(events.find())
         event_list = []
         for event in all_events:
@@ -508,9 +525,29 @@ def get_users_events():
             )
             if user_id in participants:
                 event_list.append(event["_id"])
-        return jsonify(event_list), 200
+        response = make_response(
+            jsonify(
+                {
+                    "code": 200,
+                    "description": "User events retrieved successfully",
+                    "data": event_list,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        response = make_response(
+            jsonify(
+                {
+                    "code": 500,
+                    "description": "Internal Server Error",
+                    "data": {"error": str(e)},
+                }
+            ),
+            500,
+        )
+
+    return response
 
 
 @app.route("/api/users/calendar/<user_id>", methods=["POST"])
@@ -537,6 +574,18 @@ def get_users_calendar(user_id):
                 )
         print(event_list)
         return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Get all users
+@app.route("/api/users/get-all", methods=["GET"])
+def get_all_users():
+    try:
+        all_users = list(users.find())
+        for user in all_users:
+            user["_id"] = str(user["_id"])
+        return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
