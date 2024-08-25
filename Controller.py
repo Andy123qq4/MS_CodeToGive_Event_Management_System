@@ -249,7 +249,6 @@ def register_for_event():
 
     # Check if the event is full
     if "participants" in event:
-        # Todo, add max_participants to event_details
         # if no max_participants is set, assume no limit
         max_participants = event.get("event_details", {}).get("max_participants", None)
         if max_participants is not None:
@@ -265,7 +264,7 @@ def register_for_event():
                 return response
 
     user = users.find_one({"_id": ObjectId(participant_data["user_id"])})
-    role = user.get("usertype")
+    role = user.get("usertype") + "s"
     print(role)
 
     # Add the new participant to the correct role list in the event's participants
@@ -292,6 +291,8 @@ def unregister_from_event():
     try:
         event_id = data.get("event_id")
         user_id = data.get("user_id")
+        user = users.find_one({"_id": ObjectId(user_id)})
+        role = user.get("usertype") + "s"
     except Exception as e:
         response = make_response(
             jsonify(
@@ -315,22 +316,9 @@ def unregister_from_event():
         return response
 
     # Check if the attendee is registered
-    if "participants" in event:
-        participant = next(
-            (p for p in event["participants"] if p["user_id"] == user_id), None
-        )
-        if not participant:
-            response = make_response(
-                jsonify(
-                    {
-                        "code": 404,
-                        "description": "Attendee is not registered for this event",
-                    }
-                ),
-                404,
-            )
-            return response
-    else:
+    participants = event["participants"].get(role, [])
+    participant = next((p for p in participants if p["user_id"] == user_id), None)
+    if not participant:
         response = make_response(
             jsonify(
                 {
@@ -344,7 +332,8 @@ def unregister_from_event():
 
     # Remove the participant from the event's participants list
     events.update_one(
-        {"_id": ObjectId(event_id)}, {"$pull": {"participants": {"user_id": user_id}}}
+        {"_id": ObjectId(event_id)},
+        {"$pull": {f"participants.{role}": {"user_id": user_id}}},
     )
 
     # Retrieve the updated event document
