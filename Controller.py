@@ -7,6 +7,8 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from whatsapp_reminder import send_whatsapp_message
 import logging
+import replicate
+from replicate.client import Client
 
 # import openai  # pip install openai==0.28 (old version)
 
@@ -724,7 +726,7 @@ def get_all_users():
         return jsonify(all_users), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 
 # ===============Send Reminders=====================
 @app.route("/api/events/send-reminder/", methods=["POST"])
@@ -736,7 +738,7 @@ def handle_send_message():
         event = events.find_one({"_id": ObjectId(event_id)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
     event_name = event["event_details"]["event_name"]
     start_date = event["event_details"]["start_date"]
     event_location = event["event_details"]["location"]
@@ -745,16 +747,14 @@ def handle_send_message():
     end_date = event["event_details"]["end_date"]
     message = "Please bring along your Mizookies and your pookies"
 
-
-    
     sample_message = (
         f"🔔 Thank you for signing up for {event_name} with Zubin Foundation! It is happening on {start_date} at {start_time}.\n"
         f" The event will be held at {event_location}. {message}"
     )
     # Hardcoded list of user phone numbers
     users = [
-        'whatsapp:+85290473671', # Replace with actual WhatsApp numbers
-        'whatsapp:+85294844936'
+        "whatsapp:+85290473671",  # Replace with actual WhatsApp numbers
+        "whatsapp:+85294844936",
         # 'whatsapp:+85253192036'
         # 'whatsapp:+85234567890',
         # 'whatsapp:+85245678901'
@@ -768,7 +768,44 @@ def handle_send_message():
         return jsonify({"error": str(e)}), 500
 
 
+# ==================Chatbot=======================
+
+
+@app.route("/api/chatbot/", methods=["POST"])
+def chatbot():
+    replicate = Client(api_token="r8_5t2aobLKd4sOf1AKIvPq3zOLYKVkxiF083bcg")
+    data = request.get_json()
+    try:
+        query = data.get("query")
+        # input = {
+        #     "prompt": query,
+        #     "max_new_tokens": 512,
+        #     "prompt_template": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+        # }
+        # response = []
+        # for word in replicate.stream("meta/meta-llama-3-8b-instruct", input=input):
+        #     response.append(word)
+        # print(response, end="")
+        output = replicate.run(
+            "meta/meta-llama-3-8b-instruct",
+            input={
+                "debug": False,
+                "top_k": 50,
+                "top_p": 1,
+                "prompt": query,
+                "temperature": 0,
+                # "system_prompt": default_system_prompt,
+                "max_new_tokens": 128,
+                "min_new_tokens": -1,
+            },
+        )
+
+        return jsonify({"response": "".join(output)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ==================Main=======================
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=8080, debug=True)
+    app.run(host="localhost", port=5000, debug=True)
