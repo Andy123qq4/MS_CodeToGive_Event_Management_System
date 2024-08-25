@@ -23,7 +23,7 @@ registrations = db["registrations"]
 
 # Get user info
 @app.route("/users/<user_id>", methods=["POST"])
-def get_user():
+def get_user(user_id):
     try:
         user = users.find_one({"_id": ObjectId(user_id)})
         if user:
@@ -36,14 +36,18 @@ def get_user():
 
 
 # Get user's events
-@app.route("/usersevents/<user_id>", methods=["POST"])
-def get_users_events():
+@app.route("/users/get-events/<user_id>", methods=["POST"])
+def get_users_events(user_id):
     try:
         all_events = list(events.find())
         event_list = []
         for event in all_events:
             event["_id"] = str(event["_id"])
-            participants = event["participants"]["clients"] + event["participants"]["volunteers"] + event["participants"]["admins"]
+            participants = (
+                event["participants"]["clients"]
+                + event["participants"]["volunteers"]
+                + event["participants"]["admins"]
+            )
             if user_id in participants:
                 event_list.append(event["_id"])
         return jsonify(event_list), 200
@@ -51,20 +55,33 @@ def get_users_events():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/userscalendar/<user_id>", methods=["POST"])
-def get_users_calendar():
+@app.route("/users/calendar/<user_id>", methods=["POST"])
+def get_users_calendar(user_id):
     try:
         all_events = list(events.find())
         event_list = []
         for event in all_events:
             event["_id"] = str(event["_id"])
-            participants = event["participants"]["clients"] + event["participants"]["volunteers"] + event["participants"]["admins"]
+            participants = (
+                event["participants"]["clients"]
+                + event["participants"]["volunteers"]
+                + event["participants"]["admins"]
+            )
             if user_id in participants:
-                event_list.append([event["event_details"]["event_name"], event["event_details"]["start_date"], event["event_details"]["start_time"], event["event_details"]["location"], event["event_details"]["description"]])
+                event_list.append(
+                    [
+                        event["event_details"]["event_name"],
+                        event["event_details"]["start_date"],
+                        event["event_details"]["start_time"],
+                        event["event_details"]["location"],
+                        event["event_details"]["description"],
+                    ]
+                )
         print(event_list)
         return jsonify(event_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ==================Main=======================
 """

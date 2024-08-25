@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, make_response
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from datetime import datetime
 from pymongo import MongoClient
@@ -353,58 +354,147 @@ def unregister_from_event():
 # ==================User operations=======================
 
 
-# @app.route("/api/user/sign-up", methods=["POST"])
-# def create_user():
-#     data = request.get_json()
+@app.route("/sign-in", methods=["POST"])
+def sign_in():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    usertype = data.get("usertype")
 
-#     # frontend should check
-#     # Validate input data
-#     # if not data or not data.get("email") or not data.get("password"):
-#     #     return make_response(jsonify({"error": "Missing required fields"}), 400)
+    # Find user by email
+    user = users_collection.find_one({"email": email, "usertype": usertype})
 
-#     # Check if user already exists
-#     if accounts_collection.find_one({"email": data["email"]}):
-#         return make_response(jsonify({"error": "User already exists"}), 400)
+    if user and check_password_hash(user["password"], password):
+        return jsonify({"message": "User signed in successfully"}), 200
+    else:
+        return jsonify({"error": "Sign in unsuccessful"}), 401
 
-#     # Hash the password
-#     hashed_password = generate_password_hash(data["password"], method="sha256")
 
-#     # Create new user document
-#     new_user = {
-#         "first_name": data.get("first_name", ""),
-#         "last_name": data.get("last_name", ""),
-#         "country_code": data.get("country_code", ""),
-#         "contact_number": data.get("contact_number", ""),
-#         "ethnicity": data.get("ethnicity", ""),
-#         "gender": data.get("gender", ""),
-#     }
+@app.route("/register", methods=["POST"])
+def sign_up():
+    data = request.get_json()
 
-#     # Insert the new user into the users collection
-#     user_result = users_collection.insert_one(new_user)
-#     user_id = str(user_result.inserted_id)
+    # Ensure all required fields are provided
+    required_fields = [
+        "usertype",
+        "email",
+        "first_name",
+        "last_name",
+        "country_code",
+        "contact_number",
+        "password",
+        "confirm_password",
+    ]
+    missing_fields = [
+        field for field in required_fields if field not in data or not data[field]
+    ]
 
-#     # Create new account document
-#     new_account = {
-#         "email": data["email"],
-#         "password": hashed_password,
-#         "user_id": user_id,
-#     }
+    if missing_fields:
+        return (
+            jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}),
+            400,
+        )
 
-#     # Insert the new account into the accounts collection
-#     account_result = accounts_collection.insert_one(new_account)
-#     new_account["_id"] = str(account_result.inserted_id)
+    usertype = data.get("usertype")
+    email = data.get("email")
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+    country_code = data.get("country_code")
+    contact_number = data.get("contact_number")
+    password = data.get("password")
+    confirm_password = data.get("confirm_password")
+    ethnicity = data.get("ethnicity")
+    gender = data.get("gender")
 
-#     # Return success response
-#     return make_response(
-#         jsonify(
-#             {
-#                 "message": "User registered successfully",
-#                 "user_data": new_user,
-#                 "account_data": new_account,
-#             }
-#         ),
-#         201,
-#     )
+    # Check if passwords match
+    if password != confirm_password:
+        return jsonify({"error": "Passwords do not match"}), 400
+
+    # Check if user already exists
+    existing_user = users_collection.find_one({"email": email})
+    if existing_user:
+        return jsonify({"error": "User already exists"}), 400
+
+    # Hash the password
+    hashed_password = generate_password_hash(password)
+
+    # Create new user
+    user = {
+        "usertype": usertype,
+        "email": email,
+        "first_name": first_name,
+        "last_name": last_name,
+        "country_code": country_code,
+        "contact_number": contact_number,
+        "password": hashed_password,
+        "ethnicity": ethnicity,
+        "gender": gender,
+    }
+
+    users_collection.insert_one(user)
+    return jsonify({"message": "User registered successfully"}), 200
+
+
+# Get user info
+@app.route("/api/users/<user_id>", methods=["POST"])
+def get_user(user_id):
+    try:
+        user = users.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["_id"] = str(user["_id"])
+            return jsonify(user), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Get user's events
+@app.route("/api/users/get-events/<user_id>", methods=["POST"])
+def get_users_events(user_id):
+    try:
+        all_events = list(events.find())
+        event_list = []
+        for event in all_events:
+            event["_id"] = str(event["_id"])
+            participants = (
+                event["participants"]["clients"]
+                + event["participants"]["volunteers"]
+                + event["participants"]["admins"]
+            )
+            if user_id in participants:
+                event_list.append(event["_id"])
+        return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/calendar/<user_id>", methods=["POST"])
+def get_users_calendar(user_id):
+    try:
+        all_events = list(events.find())
+        event_list = []
+        for event in all_events:
+            event["_id"] = str(event["_id"])
+            participants = (
+                event["participants"]["clients"]
+                + event["participants"]["volunteers"]
+                + event["participants"]["admins"]
+            )
+            if user_id in participants:
+                event_list.append(
+                    [
+                        event["event_details"]["event_name"],
+                        event["event_details"]["start_date"],
+                        event["event_details"]["start_time"],
+                        event["event_details"]["location"],
+                        event["event_details"]["description"],
+                    ]
+                )
+        print(event_list)
+        return jsonify(event_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ==================Main=======================
