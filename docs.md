@@ -262,7 +262,7 @@ Error Response:
 Code: 400 Bad Request
 Content:
 {"error": "event does not exist"} 
-
+<!-- 
 # Finish watching a video
 URL: volunteer/events/<event_id>/requirements
 
@@ -285,6 +285,6 @@ Code: 200 OK
 Error Response:
 Code: 400 Bad Request
 Content:
-{"error": "event does not exist"} 
+{"error": "event does not exist"}  -->
 
 
