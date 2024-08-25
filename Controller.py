@@ -112,7 +112,6 @@ def get_event(event_id):
 def update_event(event_id):
     data = request.get_json()
     updated_event = {
-        "created_by": data.get("created_by"),
         "event_details": data.get("event_details"),
         "isDeleted": data.get("isDeleted"),
         "isPublished": data.get("isPublished"),
