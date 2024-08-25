@@ -49,40 +49,34 @@ def create_event():
         "training": data.get("training"),
         "created_time": datetime.now(),
     }
-    print(event)
 
     duplicate_event = events.find_one(
         {
             "created_by": event["created_by"],
             "event_details.event_name": event["event_details"]["event_name"],
-            "event_details.start_date": event["event_details"]["start_date"],
-            "event_details.start_time": event["event_details"]["start_time"],
-            "event_details.end_date": event["event_details"]["end_date"],
-            "event_details.end_time": event["event_details"]["end_time"],
         }
     )
     print(duplicate_event)
     if duplicate_event:
         duplicate_event["_id"] = str(duplicate_event["_id"])
         response_data = {
-            "code": 409,
+            "code": 400,
             "description": "Event already exists",
-            "data": duplicate_event,
         }
-        return make_response(jsonify(response_data), 409)
+        return make_response(jsonify(response_data), 400)
 
     try:
         result = events.insert_one(event)
         new_event = events.find_one({"_id": result.inserted_id})
-        new_event["_id"] = str(new_event["_ id"])
+        new_event["_id"] = str(new_event["_id"])
         return make_response(jsonify(new_event), 201)
     except Exception as e:
         log.error(f"Error creating event: {e}")
-        return make_response(jsonify({"error": str(e)}), 500)
+        return make_response(jsonify({"error": str(e)}), 400)
 
 
 # Get all events
-@app.route("/events", methods=["GET"])
+@app.route("/events/get-all", methods=["GET"])
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -90,12 +84,12 @@ def get_all_events():
             event["_id"] = str(event["_id"])
         return jsonify(all_events), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 400
 
 
 # Get a specific event
-@app.route("/events/<event_id>", methods=["POST"])
-def get_event():
+@app.route("/events/get-specific/<event_id>", methods=["GET"])
+def get_event(event_id):
     try:
         event = events.find_one({"_id": ObjectId(event_id)})
         if event:
@@ -108,8 +102,8 @@ def get_event():
 
 
 # Update an event
-@app.route("/events/<event_id>", methods=["POST"])
-def update_event():
+@app.route("/events/update/<event_id>", methods=["POST"])
+def update_event(event_id):
     data = request.get_json()
     updated_event = {
         "created_by": data.get("created_by"),
@@ -121,19 +115,30 @@ def update_event():
         "training": data.get("training"),
     }
     try:
+        event = events.find_one({"_id": ObjectId(event_id)})
+    except Exception as e:
+        return jsonify({"error": "failed to find the event"}), 500
+
+    if ((event["event_details"]["event_name"]) !=  (updated_event["event_details"]["event_name"])):
+        return jsonify({"error": "cannot change the event name"}), 500
+    if ((event["created_by"]) !=  (updated_event["created_by"])):
+        return jsonify({"error": "cannot change who created the event"}), 500
+ 
+
+    try:
         result = events.update_one({"_id": ObjectId(event_id)}, {"$set": updated_event})
         if result.modified_count == 1:
-            updated_event["_id"] = event_id
-            return jsonify(updated_event), 200
+            updated_event["_id"] = str(event["_id"])
+            return jsonify({"Event Updated Successfully": updated_event}), 200
         else:
-            return jsonify({"error": "Failed to update the event"}), 500
+            return jsonify({"Error": "No changes made to the event"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 # Delete an event
-@app.route("/events/<event_id>", methods=["POST"])
-def delete_event():
+@app.route("/events/delete/<event_id>", methods=["DELETE"])
+def delete_event(event_id):
     try:
         result = events.delete_one({"_id": ObjectId(event_id)})
         if result.deleted_count == 1:
