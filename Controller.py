@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -13,11 +13,15 @@ log = logging.getLogger(__name__)
 app = Flask(__name__)
 # app.config["CORS_HEADERS"] = "Content-Type"
 # connect to local frontend
-CORS(
-    app,
-    resources={r"/*": {"origins": ["http://localhost:3000"]}},
-)
+# CORS(
+#     app,
+#     resources={r"/*": {"origins": ["http://localhost:3000"]}},
+# )
 # CORS(app)
+
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 
 """
 This file contains all API endpoints for the application.
@@ -42,6 +46,7 @@ registrations = db["registrations"]
 
 # Create a new event
 @app.route("/api/events/create/", methods=["POST"])
+@cross_origin()
 def create_event():
     data = request.get_json()
 
@@ -130,6 +135,7 @@ def create_event():
 
 # Get all events
 @app.route("/api/events/get-all/", methods=["GET"])
+@cross_origin()
 def get_all_events():
     try:
         all_events = list(events.find())
@@ -142,6 +148,7 @@ def get_all_events():
 
 # Get a specific event
 @app.route("/api/events/get-specific/", methods=["POST"])
+@cross_origin()
 def get_event():
     data = request.get_json()
     try:
@@ -159,6 +166,7 @@ def get_event():
 # Update an event
 # Todo, change to POST
 @app.route("/api/events/update/<event_id>", methods=["POST"])
+@cross_origin()
 def update_event(event_id):
     data = request.get_json()
     updated_event = {
@@ -197,6 +205,7 @@ def update_event(event_id):
 # Delete an event
 # Todo, change to POST
 @app.route("/api/events/delete/<event_id>", methods=["DELETE"])
+@cross_origin()
 def delete_event(event_id):
     try:
         result = events.delete_one({"_id": ObjectId(event_id)})
@@ -213,6 +222,7 @@ def delete_event(event_id):
 
 # Registration operations
 @app.route("/api/events/register/", methods=["POST"])
+@cross_origin()
 def register_for_event():
     data = request.get_json()
 
@@ -300,6 +310,7 @@ def register_for_event():
 
 
 @app.route("/api/events/unregister/", methods=["POST"])
+@cross_origin()
 def unregister_from_event():
     data = request.get_json()
 
@@ -372,6 +383,7 @@ def unregister_from_event():
 
 
 @app.route("/api/users/sign-in/", methods=["POST"])
+@cross_origin()
 def sign_in():
     data = request.get_json()
 
@@ -403,6 +415,7 @@ def sign_in():
 
 
 @app.route("/api/users/sign-up/", methods=["POST"])
+@cross_origin()
 def sign_up():
     data = request.get_json()
 
@@ -479,6 +492,7 @@ def sign_up():
 
 # Get user info
 @app.route("/api/users/", methods=["POST"])
+@cross_origin()
 def get_user():
     data = request.get_json()
     try:
@@ -513,6 +527,7 @@ def get_user():
 
 # Get user info for WhatsApp
 @app.route("/api/userswhatsapp/", methods=["POST"])
+@cross_origin()
 def get_userswhatsapp():
     data = request.get_json()
     try:
@@ -548,6 +563,7 @@ def get_userswhatsapp():
 
 # Get user's events
 @app.route("/api/users/get-events", methods=["GET"])
+@cross_origin()
 def get_users_events():
     try:
         user_id = request.args.get("user_id")
@@ -615,6 +631,7 @@ def get_users_events():
 
 
 @app.route("/api/users/calendar/", methods=["GET"])
+@cross_origin()
 def get_users_calendar():
     # data = request.get_json()
 
@@ -685,6 +702,7 @@ def get_users_calendar():
 
 # Get all users
 @app.route("/api/users/get-all", methods=["GET"])
+@cross_origin()
 def get_all_users():
     try:
         all_users = list(users.find())
