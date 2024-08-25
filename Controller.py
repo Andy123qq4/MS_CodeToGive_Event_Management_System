@@ -514,7 +514,6 @@ def get_user():
         return response
 
 
-
 # Get user info for WhatsApp
 @app.route("/api/userswhatsapp/", methods=["POST"])
 def get_userswhatsapp():
@@ -524,7 +523,7 @@ def get_userswhatsapp():
         user = users.find_one({"_id": ObjectId(user_id)})
         if user:
             user["_id"] = str(user["_id"])
-            user["contact_number"] = user["country_code"]+user["contact_number"]
+            user["contact_number"] = user["country_code"] + user["contact_number"]
             response = make_response(
                 jsonify({"code": 200, "description": "User found!", "data": user}),
                 200,
@@ -549,12 +548,14 @@ def get_userswhatsapp():
         )
         return response
 
+
 # Get user's events
-@app.route("/api/users/get-events/", methods=["POST"])
+@app.route("/api/users/get-events", methods=["GET"])
 def get_users_events():
-    data = request.get_json()
     try:
-        user_id = data.get("user_id")
+        user_id = request.args.get("user_id")
+        # user_id = data.get("user_id")
+        # print(1)
     except Exception as e:
         response = make_response(
             jsonify(
