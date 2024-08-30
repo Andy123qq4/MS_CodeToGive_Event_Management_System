@@ -11,7 +11,7 @@ JS / React
 
 ## Backend:
 Andy
-Angus
+Angus Loh
 Alikhan
 Justin
 Florence
