@@ -61,5 +61,9 @@ For a comprehensive overview of the event management system's features, you can 
 
 [![video demonstration](asset/Snipaste_2024-08-26_09-56-56.png)](https://www.youtube.com/watch?v=SVCQNC5lZ94)
 
+## Additional Notes
+
+More photos showcasing our platform can be found in the project's [asset folder](asset)
+
 
 
