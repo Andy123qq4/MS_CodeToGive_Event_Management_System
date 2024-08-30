@@ -1,0 +1,44 @@
+[
+    {
+        "id": "e1",
+        "isAppointment": false,
+        "createState": "Finished",
+        "isPublished": false,
+        "isDeleted": false,
+        "created_by": "a1",
+        "last_modified_by": "a1",
+        "event_details": {
+            "event_name": "Tech Innovators Conference 2024",
+            "image_url": "https://example.com/images/tech_innovators_conference_2024.jpg",
+            "quota": 100,
+            "start_date": "2024-09-15",
+            "start_time": "09:00",
+            "end_date": "2024-09-15",
+            "end_time": "17:00",
+            "published_date": "2024-08-15",
+            "published_time": "09:00",
+            "location": "Causeway Bay, Hong Kong",
+            "description": "A conference for tech leaders to discuss the future of technology.",
+            "target_audience": "",
+            "event_tags": ""
+        },
+        "training": {
+            "sections": [
+                {
+                "section_heading": "Introduction to Innovation",
+                "video_link": "https://example.com/videos/intro_to_innovation.mp4",
+                "section_description": "An overview of the key concepts in technology innovation."
+                }
+            ]
+        },
+        "reminder": {
+            "default_message":"",
+            "additional_message": ""
+        },
+        "participants": {
+            "clients": [],
+            "volunteers": [],
+            "admins": []
+        }
+    }
+]

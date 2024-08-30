@@ -1,0 +1,59 @@
+.background {
+  background-image: url(../images/hpi.jpg);
+  padding: 8rem;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.container {
+  background-color: #ffffff;
+  padding: -10rem;
+  background-size: cover;
+  position: relative;
+  background-position: center;
+  background-repeat: no-repeat;
+  margin-top: 0rem; /* Add margin-top to create space */
+  max-width: 1200px; /* Set a maximum width for the container */
+  margin-left: auto; /* Center the container horizontally */
+  margin-right: auto; /* Center the container horizontally */
+}
+
+.filterBar {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  gap: 2rem;
+}
+
+.filterButton {
+  background-color: #f5f5f5;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  flex-grow: 1;
+  border-radius: 20px;
+}
+
+.filterButton:hover {
+  outline: 2px solid #ff0000;
+  color: #ff0000;
+}
+
+.filterButton.active {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+.filterButtonWithIcon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.filterButtonText {
+  margin-right: 0.5rem;
+}

@@ -1,0 +1,77 @@
+.card {
+    width: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+  
+  .cardImage {
+    width: 100%;
+    height: auto;
+  }
+  
+  .cardContent {
+    display: flex;
+    padding: 16px;
+  }
+  
+  .cardDate {
+    text-align: center;
+    margin-right: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .cardDate h2 {
+    margin: 0;
+    font-size: 30px;
+    color: #d32f2f;
+    font-weight: bold; 
+  }
+  
+  .cardDate span {
+    font-size: 14px;
+    color: #757575;
+    margin-top: 4px;
+    font-weight: bold; 
+  }
+  
+  .cardDetails {
+    flex-grow: 1;
+  }
+  
+  .cardDetails h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+    font-weight: bold; 
+  }
+  
+  .cardLink {
+    font-size: 12px;
+    color: #1976d2;
+    text-decoration: underline; /* Add this line to underline the link */
+    text-decoration-color: #1976d2; /* Optionally, set the underline color */
+    text-decoration-thickness: 0.8px; /* Optionally, set the underline thickness */
+    transition: text-decoration-color 0.3s ease; /* Optionally, add a transition effect */
+  }
+  
+  .cardLink:hover {
+    text-decoration-color: #0d47a1; /* Optionally, change the underline color on hover */
+  }
+  @media (max-width: 768px) {
+    .card {
+      width: 100%;
+    }
+  
+    .cardContent {
+      flex-direction: column;
+    }
+  
+    .cardDate {
+      margin-right: 0;
+      margin-bottom: 16px;
+    }
+  }

@@ -1,0 +1,71 @@
+.achievementsSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 2rem;
+    width: 100%;
+  }
+  
+  .achievementsTitle {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .achievementCard {
+    display: flex;
+    align-items: center;
+    background-color: #f4f4f4;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    width: 60%;
+    justify-content: center;
+  }
+  
+  .achievementIcon {
+    margin-right: 1rem;
+  }
+  
+  .achievementIcon img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+  }
+  
+  .achievementDetails {
+    flex: 1;
+  }
+  
+  .achievementName {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  
+  .progressBarContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .progressBar {
+    height: 8px;
+    border-radius: 4px;
+    flex-grow: 1;
+  }
+  
+  .progressBarGrey {
+    background-color: #ccc;
+  }
+  
+  .progressBarGreen {
+    background-color: #4CAF50;
+  }
+  
+  .progressText {
+    margin-left: 0.5rem;
+    font-size: 0.9rem;
+  }

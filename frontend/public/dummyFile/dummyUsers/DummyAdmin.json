@@ -1,0 +1,24 @@
+[
+    {
+        "id": "a1",
+        "firstName": "Very",
+        "lastName": "Hungry",
+        "email": "very.hungry@example.com",
+        "password": "mypassword",
+        "contact": "88888888",
+        "ethnicity": "Thai",
+        "gender": "Female",
+        "events_in_charge": [{
+            "event_id": "e1"
+        }],
+        "events_history": [{
+            "event_id": "e2"        
+        }],
+        "appointment_in_charge":[
+            {"appointment": "ap1"}
+        ],
+        "appointment_history":[
+            {"appointment": "ap2"}
+        ]
+    }
+]

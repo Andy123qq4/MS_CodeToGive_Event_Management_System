@@ -1,0 +1,44 @@
+[
+    {
+      "event_id": "e1",
+      "createState": "Finished",
+      "isPublished": false,
+      "isDeleted": false,
+      "created_by": "Michael Loh",
+      "last_modified_by": "Michael Loh",
+      "event_details": {
+        "event_name": "Kayaking with your fellow friends",
+        "image_url": "/images/kayaking.jpg",
+        "quota": 100,
+        "start_date": "2024-07-28",
+        "start_time": "10:00",
+        "end_date": "2024-07-28",
+        "end_time": "16:00",
+        "published_date": "2024-07-15",
+        "published_time": "09:00",
+        "location": "Sham Shui Po",
+        "description": "A fun day of kayaking with friends.",
+        "target_audience": ["Male", "Female"],
+        "event_tags": ["Outdoors", "Sports", "Kayaking"]
+      },
+      "training": {
+        "sections": [
+          {
+            "section_heading": "Introduction to Kayaking",
+            "video_link": "https://example.com/videos/intro_to_kayaking.mp4",
+            "section_description": "Learn the basics of kayaking."
+          }
+        ]
+      },
+      "reminder": {
+        "default_message": "",
+        "additional_message": ""
+      },
+      "participants": {
+        "clients": [],
+        "volunteers": [],
+        "admins": []
+      }
+    }
+  ]
+  

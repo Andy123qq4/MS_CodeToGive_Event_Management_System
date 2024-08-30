@@ -1,0 +1,31 @@
+[
+    {
+        "id": "b1",
+        "badge_name": "Chai Tea Making",
+        "badge_description": "Make a cup of chai tea",
+        "badge_image": "",
+        "event_link": {
+            "event_specific": true, 
+            "event_id": "e1"
+        },
+        "stars": {
+            "use_start": false,
+            "stars_count": 0
+        }
+    },
+    {
+        "badge_id": "b2",
+        "badge_name": "Get 5 stars",
+        "badge_description": "Attend 5 events",
+        "badge_image": "",
+        "event_link": {
+            "event_specific": false, 
+            "event_id": ""
+        },
+        "stars": {
+            "use_start": true,
+            "stars_count": 1
+        }
+    }
+]
+
