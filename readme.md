@@ -63,7 +63,7 @@ For a comprehensive overview of the event management system's features, you can 
 
 ## Additional Notes
 
-More photos showcasing our platform can be found in the project's [asset folder](asset)
+More photos showcasing our platform can be found in the project's [asset folder](asset).
 
 
 
