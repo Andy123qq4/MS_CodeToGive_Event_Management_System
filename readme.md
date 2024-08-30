@@ -57,7 +57,9 @@ Make sure to run the backend and frontend on your localhost to access the projec
 
 ## Video Demonstration
 
-For a comprehensive overview of the event management system's features, you can watch the demonstration video below: [![video demonstration](asset/Snipaste_2024-08-26_09-56-56.png)](https://www.youtube.com/watch?v=SVCQNC5lZ94)
+For a comprehensive overview of the event management system's features, you can watch the demonstration video below:
+
+[![video demonstration](asset/Snipaste_2024-08-26_09-56-56.png)](https://www.youtube.com/watch?v=SVCQNC5lZ94)
 
 
 
