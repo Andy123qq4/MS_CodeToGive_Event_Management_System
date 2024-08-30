@@ -16,7 +16,7 @@ This repository hosts the code for an **end-to-end event management platform** d
 - **Frontend**: Next.js for efficient state management.
 - **Backend**: Flask for robust server-side logic.
 - **Database**: MongoDB for scalable data storage.
-- **APIs**: Integrated with external APIs such as Twilio to enhance functionality.
+- **APIs**: Twilio for WhatsApp Messaging, Relicate for Chatbot.
 
 ## Getting Started
 
