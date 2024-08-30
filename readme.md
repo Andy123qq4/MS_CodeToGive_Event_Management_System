@@ -40,7 +40,7 @@ To set up the project locally, follow these instructions:
      pip install -r requirements.txt
      ```
 
-### Running the Project
+## Running the Project
 1. Open two separate terminals.
 2. In the first terminal, navigate to the `backend` directory and run the backend server by executing the following command:
 ```bash
