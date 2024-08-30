@@ -37,7 +37,7 @@ To set up the project locally, follow these instructions:
 ### Backend Setup
 
 1. Open a terminal and navigate to the `backend` directory.
-2. [Optional] Setup your `Replicate` in [Controller.py](backend/Controller.py) and `Twilio` in ([whatsapp_reminder.py](backend/whatsapp_reminder.py)) API 
+2. [Optional] Setup your `Replicate` in [Controller.py](backend/Controller.py) and `Twilio` in ([whatsapp_reminder.py](backend/whatsapp_reminder.py)) API
 3. Install the required dependencies by running the following command:
 
      ```bash
